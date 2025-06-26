@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+
+# Project specific
+uploads/
+vector_stores/
+*.pdf
+*.faiss
+*.metadata
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+ollama.log
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Temporary files
+temp/
+tmp/
