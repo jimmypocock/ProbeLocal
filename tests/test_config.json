@@ -1,0 +1,63 @@
+{
+  "test_questions": {
+    "basic_retrieval": [
+      {
+        "question": "What is the invoice number?",
+        "expected_keywords": ["INV-2025-001"],
+        "difficulty": "easy"
+      },
+      {
+        "question": "What is the total amount due?",
+        "expected_keywords": ["32,550", "32550", "$32,550.00"],
+        "difficulty": "easy"
+      },
+      {
+        "question": "Who is being billed?",
+        "expected_keywords": ["Tech Startup Inc", "Tech Startup"],
+        "difficulty": "easy"
+      },
+      {
+        "question": "What is the tax rate?",
+        "expected_keywords": ["8.5%", "8.5"],
+        "difficulty": "easy"
+      }
+    ],
+    "comprehension": [
+      {
+        "question": "What services were provided in this invoice?",
+        "expected_keywords": ["AI Model", "Data Processing", "API", "Consultation", "Documentation"],
+        "difficulty": "medium"
+      },
+      {
+        "question": "When is the payment due?",
+        "expected_keywords": ["30 days", "thirty days", "within 30"],
+        "difficulty": "medium"
+      },
+      {
+        "question": "What discount is offered for early payment?",
+        "expected_keywords": ["2%", "2 percent", "10 days"],
+        "difficulty": "medium"
+      },
+      {
+        "question": "When is the training session scheduled?",
+        "expected_keywords": ["July 15", "July 15, 2025"],
+        "difficulty": "medium"
+      }
+    ],
+    "analysis": [
+      {
+        "question": "How much would I save with the early payment discount?",
+        "expected_keywords": ["651", "$651", "651.00"],
+        "difficulty": "hard"
+      },
+      {
+        "question": "What is the hourly rate for data processing?",
+        "expected_keywords": ["150", "$150", "150.00"],
+        "difficulty": "hard"
+      }
+    ]
+  },
+  "model_timeout": 60,
+  "batch_size": 5,
+  "test_categories": ["basic_retrieval", "comprehension", "analysis"]
+}

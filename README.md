@@ -1,4 +1,6 @@
-# Complete Guide: Free PDF Q&A on M3 MacBook Air
+# Probe Local: Complete Guide to Free PDF Q&A on M3 MacBook Air
+
+**A privacy-focused PDF question-answering system built for M3 MacBook Air and Apple Silicon Macs. Uses Ollama and open-source LLMs to provide completely local, free document intelligence. Features a clean web UI, support for multiple AI models, and optimized performance for machines with 8-24GB RAM.**
 
 ## Why M3 MacBook Air is Perfect for This
 

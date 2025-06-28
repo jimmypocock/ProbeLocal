@@ -1,0 +1,41 @@
+{
+  "model_parameters": {
+    "deepseek-llm:7b-chat": {
+      "num_ctx": 2048,
+      "num_thread": 8,
+      "repeat_penalty": 1.1,
+      "stop": [
+        "Human:",
+        "Question:"
+      ]
+    },
+    "deepseek-coder:6.7b-instruct": {
+      "num_ctx": 2048,
+      "num_thread": 8,
+      "repeat_penalty": 1.1,
+      "stop": [
+        "Human:",
+        "Question:"
+      ]
+    },
+    "llama3:8b": {
+      "num_ctx": 2048,
+      "num_thread": 8,
+      "repeat_penalty": 1.1,
+      "stop": [
+        "Human:",
+        "Question:"
+      ]
+    },
+    "mistral:latest": {
+      "num_ctx": 2048,
+      "num_thread": 8,
+      "repeat_penalty": 1.1,
+      "stop": [
+        "Human:",
+        "Question:"
+      ]
+    }
+  },
+  "unsupported_models": []
+}

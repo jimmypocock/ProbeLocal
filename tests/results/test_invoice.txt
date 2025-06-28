@@ -1,0 +1,55 @@
+ACME CORPORATION
+INVOICE
+
+Invoice Number: INV-2025-001
+Date: June 27, 2025
+
+BILL TO:
+Tech Startup Inc.
+456 Innovation Drive
+San Francisco, CA 94105
+Contact: John Doe
+Email: john@techstartup.com
+
+INVOICE DETAILS:
+
+Item Description                    Quantity    Unit Price    Total
+-------------------------------------------------------------------
+AI Model Development                1 project   $15,000.00    $15,000.00
+Data Processing Pipeline            40 hours    $150.00       $6,000.00
+Machine Learning Consultation       20 hours    $200.00       $4,000.00
+Custom API Integration              1 system    $3,500.00     $3,500.00
+Technical Documentation             1 package   $1,500.00     $1,500.00
+
+-------------------------------------------------------------------
+                                              Subtotal:     $30,000.00
+                                              Tax (8.5%):    $2,550.00
+                                              TOTAL DUE:    $32,550.00
+
+PAYMENT TERMS:
+- Payment due within 30 days
+- 2% discount if paid within 10 days
+- Make checks payable to: ACME Corporation
+- Wire transfer details available upon request
+
+PROJECT SUMMARY:
+This invoice covers the development of a custom AI solution including:
+- Natural language processing model for customer service automation
+- Real-time data processing pipeline handling 1M+ requests/day
+- RESTful API with 99.9% uptime SLA
+- Comprehensive documentation and training materials
+- 90-day warranty and support period
+
+ADDITIONAL NOTES:
+- All intellectual property rights transferred upon full payment
+- Source code will be delivered via secure GitHub repository
+- Training session scheduled for July 15, 2025
+- Monthly maintenance agreement available for $2,000/month
+
+Thank you for your business!
+
+For questions about this invoice, please contact:
+Billing Department
+ACME Corporation
+billing@acmecorp.com
+(555) 123-4567

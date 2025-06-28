@@ -25,12 +25,24 @@ def check_ollama():
         return False
 
 st.set_page_config(
-page_title="PDF Q&A - M3 Optimized",
-page_icon="🍎",
+page_title="Probe Local - PDF Q&A",
+page_icon="🔍",
 layout="wide"
 )
 
-st.title("🍎 PDF Question Answering - M3 MacBook Air")
+# Initialize session state variables
+if 'messages' not in st.session_state:
+    st.session_state.messages = []
+if 'current_document_id' not in st.session_state:
+    st.session_state.current_document_id = None
+if 'is_processing' not in st.session_state:
+    st.session_state.is_processing = False
+if 'selected_model' not in st.session_state:
+    st.session_state.selected_model = None
+if 'current_model' not in st.session_state:
+    st.session_state.current_model = None
+
+st.title("🔍 Probe Local - PDF Question Answering")
 st.markdown("100% Free, Local, and Private!")
 
 # System status sidebar
@@ -101,10 +113,6 @@ with st.sidebar:
 
     # File upload
     uploaded_file = st.file_uploader("Choose a PDF", type="pdf", key="pdf_uploader")
-    
-    # Initialize processing state
-    if 'is_processing' not in st.session_state:
-        st.session_state.is_processing = False
     
     if uploaded_file is not None:
         # Disable button while processing
@@ -251,11 +259,6 @@ with st.sidebar:
 
 st.markdown("### 💬 Ask Questions")
 
-# Initialize session state
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-if 'current_document_id' not in st.session_state:
-    st.session_state.current_document_id = None
 
 # Check if document is loaded
 if st.session_state.current_document_id is None:

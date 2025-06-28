@@ -2,11 +2,13 @@
 
 help:
 	@echo "Available commands:"
-	@echo "  make run      - Start the PDF Q&A application"
-	@echo "  make install  - Install dependencies"
-	@echo "  make clean    - Clean up temporary files"
-	@echo "  make monitor  - Show memory and storage usage"
-	@echo "  make models   - List available Ollama models"
+	@echo "  make run              - Start the PDF Q&A application"
+	@echo "  make install          - Install dependencies"
+	@echo "  make clean            - Clean up temporary files"
+	@echo "  make monitor          - Show memory and storage usage"
+	@echo "  make models           - List available Ollama models"
+	@echo "  make test-models      - Full model testing with PDF Q&A"
+	@echo "  make test-models-quick - Quick parameter compatibility test"
 
 run:
 	@./run.sh
@@ -52,6 +54,16 @@ monitor:
 models:
 	@echo "📦 Available Ollama Models:"
 	@ollama list
+
+test-models:
+	@echo "🧪 Testing Model Compatibility..."
+	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
+	@./venv/bin/python tests/test_all_models.py
+
+test-models-quick:
+	@echo "🧪 Quick Model Compatibility Test..."
+	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
+	@./venv/bin/python tests/integration/test_model_compatibility.py
 
 storage-report:
 	@echo "💾 Storage Cleanup Report:"
