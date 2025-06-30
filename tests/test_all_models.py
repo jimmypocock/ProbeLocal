@@ -21,11 +21,89 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 from config import Config
 import ollama
+from tests.utils import get_model_full_name, get_available_models as get_available_models_util, parse_model_list
 
-class ComprehensiveTester:
-    def __init__(self, pdf_path: str = None):
+class ModelTester:
+    """Base class for model testing functionality"""
+    def __init__(self):
         self.config = Config()
         self.api_base = "http://localhost:8080"
+        
+    async def upload_document(self, pdf_path: str, model: str) -> str:
+        """Upload a document and return its ID"""
+        try:
+            with open(pdf_path, 'rb') as f:
+                files = {'file': (os.path.basename(pdf_path), f, 'application/pdf')}
+                response = requests.post(
+                    f"{self.api_base}/upload",
+                    files=files,
+                    data={'model': model}
+                )
+                
+            if response.status_code == 200:
+                return response.json()['document_id']
+            else:
+                print(f"Upload failed: {response.status_code} - {response.text}")
+                return None
+        except Exception as e:
+            print(f"Upload error: {e}")
+            return None
+    
+    async def ask_question(self, doc_id: str, question: str, model: str) -> Dict:
+        """Ask a question about a document"""
+        start_time = time.time()
+        try:
+            response = requests.post(
+                f"{self.api_base}/ask",
+                json={
+                    'document_id': doc_id,
+                    'question': question,
+                    'model': model
+                }
+            )
+            
+            response_time = time.time() - start_time
+            
+            if response.status_code == 200:
+                result = response.json()
+                return {
+                    'answer': result['answer'],
+                    'response_time': response_time,
+                    'status': 'success'
+                }
+            else:
+                return {
+                    'error': f"{response.status_code}: {response.text}",
+                    'response_time': response_time,
+                    'status': 'error'
+                }
+        except Exception as e:
+            return {
+                'error': str(e),
+                'response_time': time.time() - start_time,
+                'status': 'error'
+            }
+    
+    async def delete_document(self, doc_id: str):
+        """Delete a document"""
+        try:
+            requests.delete(f"{self.api_base}/documents/{doc_id}")
+        except:
+            pass
+    
+    async def get_available_models(self) -> List[str]:
+        """Get list of available models from Ollama"""
+        try:
+            models = ollama.list()
+            return [model['name'].split(':')[0] for model in models['models']]
+        except Exception as e:
+            print(f"Error getting models: {e}")
+            return []
+
+
+class ComprehensiveTester(ModelTester):
+    def __init__(self, pdf_path: str = None):
+        super().__init__()
         self.pdf_path = pdf_path or "tests/fixtures/test_invoice.pdf"
         self.test_questions = [
             # Basic retrieval questions
@@ -79,11 +157,7 @@ class ComprehensiveTester:
     
     def get_available_models(self) -> List[str]:
         """Get list of available models"""
-        try:
-            models = ollama.list()
-            return [model['name'] for model in models['models']]
-        except:
-            return []
+        return get_available_models_util()
     
     def upload_pdf(self) -> Tuple[bool, str, str]:
         """Upload PDF and return success status, document_id, and message"""
@@ -105,6 +179,9 @@ class ComprehensiveTester:
     
     def test_model_qa(self, model_name: str, document_id: str) -> Dict[str, Any]:
         """Test a model with all questions"""
+        # Get the full model name for API calls
+        full_model_name = get_model_full_name(model_name)
+        
         model_results = {
             "model": model_name,
             "document_id": document_id,
@@ -136,7 +213,7 @@ class ComprehensiveTester:
                 payload = {
                     "question": question,
                     "document_id": document_id,
-                    "model_name": model_name,
+                    "model_name": full_model_name,
                     "max_results": 5
                 }
                 
@@ -256,7 +333,21 @@ class ComprehensiveTester:
         # Get models
         available_models = self.get_available_models()
         if models:
-            test_models = [m for m in models if m in available_models]
+            # Models were provided with full names, extract short names for display
+            from tests.utils import MODEL_MAPPINGS
+            test_models = []
+            for model in models:
+                # Find the short name for this model
+                found = False
+                for short, full in MODEL_MAPPINGS.items():
+                    if model == full:
+                        if short in available_models:
+                            test_models.append(short)
+                            found = True
+                        break
+                if not found and model in available_models:
+                    # Not a known model mapping, use as is if available
+                    test_models.append(model)
         else:
             test_models = available_models
         
@@ -422,7 +513,10 @@ def main():
     if args.questions:
         tester.test_questions = tester.test_questions[:args.questions]
     
-    tester.run_tests(models=args.models)
+    # Parse model list - this converts short names to full names if needed
+    models = parse_model_list(args.models) if args.models else None
+    
+    tester.run_tests(models=models)
 
 
 if __name__ == "__main__":

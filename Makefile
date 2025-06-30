@@ -7,7 +7,9 @@ help:
 	@echo "  make clean            - Clean up temporary files"
 	@echo "  make monitor          - Show memory and storage usage"
 	@echo "  make models           - List available Ollama models"
-	@echo "  make test-models      - Full model testing with PDF Q&A"
+	@echo "  make test-models      - Test models with invoice Q&A"
+	@echo "  make test-story       - Test models with story comprehension"
+	@echo "  make test-all         - Run all test suites"
 	@echo "  make test-models-quick - Quick parameter compatibility test"
 
 run:
@@ -64,6 +66,15 @@ test-models-quick:
 	@echo "🧪 Quick Model Compatibility Test..."
 	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
 	@./venv/bin/python tests/integration/test_model_compatibility.py
+
+test-story:
+	@echo "📖 Testing Story Comprehension..."
+	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
+	@./venv/bin/python tests/test_story_comprehension.py
+
+test-all:
+	@echo "🧪 Running All Tests..."
+	@./tests/run_all_tests.sh
 
 storage-report:
 	@echo "💾 Storage Cleanup Report:"

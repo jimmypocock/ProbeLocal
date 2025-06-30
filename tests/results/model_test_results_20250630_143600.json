@@ -1,9 +1,9 @@
 {
-  "test_date": "2025-06-30T15:28:32.256924",
+  "test_date": "2025-06-30T14:25:12.985360",
   "pdf_file": "tests/fixtures/test_invoice.pdf",
   "models": {
-    "deepseek-llm": {
-      "model": "deepseek-llm",
+    "deepseek-llm:7b-chat": {
+      "model": "deepseek-llm:7b-chat",
       "document_id": "5150e9280fb3c35f",
       "questions": [
         {
@@ -11,7 +11,7 @@
           "answer": "The invoice number is INV-2025-001.",
           "success": true,
           "accurate": true,
-          "response_time": 19.554391622543335,
+          "response_time": 25.93502402305603,
           "expected_keywords": [
             "INV-2025-001"
           ]
@@ -21,7 +21,7 @@
           "answer": "The total amount due is $32,550.00.",
           "success": true,
           "accurate": true,
-          "response_time": 16.529601097106934,
+          "response_time": 17.682018041610718,
           "expected_keywords": [
             "32,550",
             "32550"
@@ -29,10 +29,10 @@
         },
         {
           "question": "Who is being billed?",
-          "answer": "Tech Startup Inc. is being billed for the services and products included on this invoice.",
+          "answer": "Tech Startup Inc. is being billed for the services and products included on this invoice from ACME Corporation.",
           "success": true,
           "accurate": true,
-          "response_time": 19.349018096923828,
+          "response_time": 19.041155099868774,
           "expected_keywords": [
             "Tech Startup Inc"
           ]
@@ -42,7 +42,7 @@
           "answer": "The tax rate is 8.5%.",
           "success": true,
           "accurate": true,
-          "response_time": 17.593826055526733,
+          "response_time": 12.914684772491455,
           "expected_keywords": [
             "8.5%",
             "8.5"
@@ -50,10 +50,10 @@
         },
         {
           "question": "What services were provided in this invoice?",
-          "answer": "This invoice covers the development of a custom AI solution which includes the following services:\n\n* Development of an AI model for customer service automation using natural language processing\n* Real-time data processing pipeline capable of handling one million requests per day\n* RESTful API with a 99.9% uptime Service Level Agreement (SLA)\n* Comprehensive documentation and training materials provided\n* A 90-day warranty and support period for the solution",
+          "answer": "This invoice provides various services including AI model development for a single project, data processing pipeline development for 40 hours of work, machine learning consultation for 20 hours of work, and custom API integration for one system.",
           "success": true,
           "accurate": true,
-          "response_time": 36.67636704444885,
+          "response_time": 19.01431393623352,
           "expected_keywords": [
             "AI Model",
             "Data Processing",
@@ -65,7 +65,7 @@
           "answer": "The payment is due within 30 days.",
           "success": true,
           "accurate": true,
-          "response_time": 14.49768877029419,
+          "response_time": 10.466409921646118,
           "expected_keywords": [
             "30 days",
             "thirty days"
@@ -73,132 +73,10 @@
         },
         {
           "question": "What discount is offered for early payment?",
-          "answer": "The discount offered for early payment is 2% if paid within 10 days.",
+          "answer": "The given document does not explicitly mention the amount of discount offered for early payment.",
           "success": true,
-          "accurate": true,
-          "response_time": 14.408531904220581,
-          "expected_keywords": [
-            "2%",
-            "2 percent",
-            "10 days"
-          ]
-        },
-        {
-          "question": "When is the training session scheduled?",
-          "answer": "The training session for this project is scheduled for July 15, 2025.",
-          "success": true,
-          "accurate": true,
-          "response_time": 17.766310214996338,
-          "expected_keywords": [
-            "July 15",
-            "July"
-          ]
-        },
-        {
-          "question": "What is the hourly rate for data processing?",
-          "answer": "The hourly rate for Data Processing is $150.",
-          "success": true,
-          "accurate": true,
-          "response_time": 59.9643759727478,
-          "expected_keywords": [
-            "150",
-            "per hour",
-            "hourly"
-          ]
-        }
-      ],
-      "errors": [
-        {
-          "question": "How much would I save with the early payment discount?",
-          "error": "Request timeout (60s)",
-          "response_time": 60
-        }
-      ],
-      "metrics": {
-        "total_questions": 10,
-        "successful_answers": 9,
-        "accurate_answers": 9,
-        "total_time": 216.3401107788086,
-        "average_time": 24.037790086534287,
-        "success_rate": 90.0,
-        "accuracy_rate": 90.0
-      }
-    },
-    "deepseek-coder": {
-      "model": "deepseek-coder",
-      "document_id": "5150e9280fb3c35f",
-      "questions": [
-        {
-          "question": "What is the invoice number?",
-          "answer": "The invoice number is \"INV-2025-001\".",
-          "success": true,
-          "accurate": true,
-          "response_time": 20.49465799331665,
-          "expected_keywords": [
-            "INV-2025-001"
-          ]
-        },
-        {
-          "question": "What is the total amount due?",
-          "answer": "The total amount due is $32,550.00.",
-          "success": true,
-          "accurate": true,
-          "response_time": 13.98589825630188,
-          "expected_keywords": [
-            "32,550",
-            "32550"
-          ]
-        },
-        {
-          "question": "Who is being billed?",
-          "answer": "The customer being billed is Tech Startup Inc. located at 456 Innovation Drive, San Francisco, CA 94105. The bill can be sent to John Doe via email john@techstartup.com or by mail to the above address.",
-          "success": true,
-          "accurate": true,
-          "response_time": 19.722610235214233,
-          "expected_keywords": [
-            "Tech Startup Inc"
-          ]
-        },
-        {
-          "question": "What is the tax rate?",
-          "answer": "The tax rate is 8.5%.",
-          "success": true,
-          "accurate": true,
-          "response_time": 13.486541032791138,
-          "expected_keywords": [
-            "8.5%",
-            "8.5"
-          ]
-        },
-        {
-          "question": "What services were provided in this invoice?",
-          "answer": "The services provided in this invoice include:\n\n- AI Model Development for a project valued at $15,000.00\n- Data Processing Pipeline with a duration of 40 hours and unit price of $150.00\n- Machine Learning Consultation with a duration of 20 hours and unit price of $200.00\n- Custom API Integration for a system valued at $3,500.00.",
-          "success": true,
-          "accurate": true,
-          "response_time": 35.74191498756409,
-          "expected_keywords": [
-            "AI Model",
-            "Data Processing",
-            "API"
-          ]
-        },
-        {
-          "question": "When is the payment due?",
-          "answer": "The payment is due within 30 days.",
-          "success": true,
-          "accurate": true,
-          "response_time": 16.42010235786438,
-          "expected_keywords": [
-            "30 days",
-            "thirty days"
-          ]
-        },
-        {
-          "question": "What discount is offered for early payment?",
-          "answer": "2% discount if paid within 10 days.",
-          "success": true,
-          "accurate": true,
-          "response_time": 9.953178882598877,
+          "accurate": false,
+          "response_time": 9.851826906204224,
           "expected_keywords": [
             "2%",
             "2 percent",
@@ -210,7 +88,7 @@
           "answer": "The training session is scheduled for July 15, 2025.",
           "success": true,
           "accurate": true,
-          "response_time": 10.665197134017944,
+          "response_time": 13.611004829406738,
           "expected_keywords": [
             "July 15",
             "July"
@@ -218,10 +96,10 @@
         },
         {
           "question": "How much would I save with the early payment discount?",
-          "answer": "The total due for this invoice is $32,550.00. The tax amount (8.5% of subtotal) is $2,550.00. \n\nIf a 2% discount was applied if paid within 10 days, we would need to subtract the total due by that percentage: $32,550.00 - 2% = $31,694.80. \n\nSo, you would save approximately $855.20 with an early payment discount on this invoice.",
+          "answer": "If the payment is made within 10 days, the customer will receive a 2% discount on this invoice. The total amount due with the early payment discount would be $30,570 (before tax).",
           "success": true,
           "accurate": true,
-          "response_time": 28.11966586112976,
+          "response_time": 19.473356008529663,
           "expected_keywords": [
             "651",
             "discount"
@@ -229,10 +107,10 @@
         },
         {
           "question": "What is the hourly rate for data processing?",
-          "answer": "The hourly rate for data processing is $150.00 per hour.",
+          "answer": "The hourly rate for Data Processing is $150.",
           "success": true,
           "accurate": true,
-          "response_time": 12.343129873275757,
+          "response_time": 18.78369402885437,
           "expected_keywords": [
             "150",
             "per hour",
@@ -244,33 +122,160 @@
       "metrics": {
         "total_questions": 10,
         "successful_answers": 10,
-        "accurate_answers": 10,
-        "total_time": 180.9328966140747,
-        "average_time": 18.09328966140747,
+        "accurate_answers": 9,
+        "total_time": 166.7734875679016,
+        "average_time": 16.67734875679016,
         "success_rate": 100.0,
-        "accuracy_rate": 100.0
+        "accuracy_rate": 90.0
       }
     },
-    "llama3": {
-      "model": "llama3",
+    "deepseek-coder:6.7b-instruct": {
+      "model": "deepseek-coder:6.7b-instruct",
       "document_id": "5150e9280fb3c35f",
       "questions": [
         {
           "question": "What is the invoice number?",
-          "answer": "The invoice number is: INV-2025-001.",
+          "answer": "Invoice Number: INV-2025-001.",
           "success": true,
           "accurate": true,
-          "response_time": 16.02558732032776,
+          "response_time": 21.772425174713135,
           "expected_keywords": [
             "INV-2025-001"
           ]
         },
         {
           "question": "What is the total amount due?",
-          "answer": "The total amount due is $32,550.00, as explicitly stated in the document.",
+          "answer": "TOTAL DUE:    $32,550.00",
           "success": true,
           "accurate": true,
-          "response_time": 9.453134059906006,
+          "response_time": 15.17572569847107,
+          "expected_keywords": [
+            "32,550",
+            "32550"
+          ]
+        },
+        {
+          "question": "Who is being billed?",
+          "answer": "ACME Corporation",
+          "success": true,
+          "accurate": false,
+          "response_time": 11.230600118637085,
+          "expected_keywords": [
+            "Tech Startup Inc"
+          ]
+        },
+        {
+          "question": "What is the tax rate?",
+          "answer": "The tax rate is 8.5%.",
+          "success": true,
+          "accurate": true,
+          "response_time": 15.750651121139526,
+          "expected_keywords": [
+            "8.5%",
+            "8.5"
+          ]
+        },
+        {
+          "question": "What services were provided in this invoice?",
+          "answer": "The services provided in this invoice include:\n- AI Model Development for a project valued at $15,000.00\n- Data Processing Pipeline of 40 hours worth of $150.00 each\n- Machine Learning Consultation for 20 hours worth of $200.00 each\n- Custom API Integration for one system valued at $3,500.00",
+          "success": true,
+          "accurate": true,
+          "response_time": 28.734480142593384,
+          "expected_keywords": [
+            "AI Model",
+            "Data Processing",
+            "API"
+          ]
+        },
+        {
+          "question": "When is the payment due?",
+          "answer": "I'm sorry, but as an AI programming assistant, I don't have the ability to analyze documents or provide answers related to them. My primary function is to assist with computer science-related inquiries and tasks. If you have any questions about programming, algorithms, data structures, or similar topics, feel free to ask!",
+          "success": true,
+          "accurate": false,
+          "response_time": 22.674096822738647,
+          "expected_keywords": [
+            "30 days",
+            "thirty days"
+          ]
+        },
+        {
+          "question": "What discount is offered for early payment?",
+          "answer": "There appears to be no explicit discount given for early payment on this invoice. However, based on the available PAYMENT TERMS section of the document, it's stated that a 2% discount would be offered if paid within 10 days from the due date. If there is an error in the document or the terms are changed later, it would not apply for late payments and the full amount of $32,550.00 should be paid by the due date.",
+          "success": true,
+          "accurate": true,
+          "response_time": 20.919113874435425,
+          "expected_keywords": [
+            "2%",
+            "2 percent",
+            "10 days"
+          ]
+        },
+        {
+          "question": "When is the training session scheduled?",
+          "answer": "The training session is scheduled for July 15, 2025.",
+          "success": true,
+          "accurate": true,
+          "response_time": 9.611942052841187,
+          "expected_keywords": [
+            "July 15",
+            "July"
+          ]
+        },
+        {
+          "question": "How much would I save with the early payment discount?",
+          "answer": "The amount due on the invoice is $32,550.00. The total discounts given are for a 2% discount if paid within 10 days and the subtotal of all items on the invoice before any discounts have been applied is $30,000.00.\n\nThe calculated discount would be: (Subtotal * Discount Percentage) = $30,000.00 * 2% = $60.00\n\nSo, with the early payment discount, you would save a total of $60.00 on this invoice.",
+          "success": true,
+          "accurate": true,
+          "response_time": 25.077216863632202,
+          "expected_keywords": [
+            "651",
+            "discount"
+          ]
+        },
+        {
+          "question": "What is the hourly rate for data processing?",
+          "answer": "The hourly rate for data processing was $150.00 per hour.",
+          "success": true,
+          "accurate": true,
+          "response_time": 10.388876914978027,
+          "expected_keywords": [
+            "150",
+            "per hour",
+            "hourly"
+          ]
+        }
+      ],
+      "errors": [],
+      "metrics": {
+        "total_questions": 10,
+        "successful_answers": 10,
+        "accurate_answers": 8,
+        "total_time": 181.3351287841797,
+        "average_time": 18.133512878417967,
+        "success_rate": 100.0,
+        "accuracy_rate": 80.0
+      }
+    },
+    "llama3:8b": {
+      "model": "llama3:8b",
+      "document_id": "5150e9280fb3c35f",
+      "questions": [
+        {
+          "question": "What is the invoice number?",
+          "answer": "The invoice number is INV-2025-001.",
+          "success": true,
+          "accurate": true,
+          "response_time": 11.881045818328857,
+          "expected_keywords": [
+            "INV-2025-001"
+          ]
+        },
+        {
+          "question": "What is the total amount due?",
+          "answer": "According to the document, the TOTAL DUE is $32,550.00.",
+          "success": true,
+          "accurate": true,
+          "response_time": 8.304054975509644,
           "expected_keywords": [
             "32,550",
             "32550"
@@ -281,7 +286,7 @@
           "answer": "Tech Startup Inc.",
           "success": true,
           "accurate": true,
-          "response_time": 7.586525201797485,
+          "response_time": 6.989969968795776,
           "expected_keywords": [
             "Tech Startup Inc"
           ]
@@ -291,7 +296,7 @@
           "answer": "The tax rate is 8.5%.",
           "success": true,
           "accurate": true,
-          "response_time": 8.02225375175476,
+          "response_time": 7.234527111053467,
           "expected_keywords": [
             "8.5%",
             "8.5"
@@ -299,10 +304,10 @@
         },
         {
           "question": "What services were provided in this invoice?",
-          "answer": "According to the document, the following services were provided:\n\n1. AI Model Development\n2. Data Processing Pipeline (40 hours)\n3. Machine Learning Consultation (20 hours)\n4. Custom API Integration (1 system)\n\nThese services are listed under \"INVOICE DETAILS\" in the document.",
+          "answer": "According to the document, the following services were provided:\n\n* AI Model Development (1 project) for $15,000.00\n* Data Processing Pipeline (40 hours) for $6,000.00\n* Machine Learning Consultation (20 hours) for $4,000.00\n* Custom API Integration (1 system) for $3,500.00",
           "success": true,
           "accurate": true,
-          "response_time": 15.121222019195557,
+          "response_time": 16.28473401069641,
           "expected_keywords": [
             "AI Model",
             "Data Processing",
@@ -311,10 +316,10 @@
         },
         {
           "question": "When is the payment due?",
-          "answer": "Payment due within 30 days.",
+          "answer": "According to the document, payment is due within 30 days.",
           "success": true,
           "accurate": true,
-          "response_time": 7.257081031799316,
+          "response_time": 7.171868085861206,
           "expected_keywords": [
             "30 days",
             "thirty days"
@@ -325,7 +330,7 @@
           "answer": "According to the document, a 2% discount is offered if paid within 10 days.",
           "success": true,
           "accurate": true,
-          "response_time": 8.917934894561768,
+          "response_time": 7.503552198410034,
           "expected_keywords": [
             "2%",
             "2 percent",
@@ -337,7 +342,7 @@
           "answer": "The training session is scheduled for July 15, 2025.",
           "success": true,
           "accurate": true,
-          "response_time": 8.392430067062378,
+          "response_time": 8.510616064071655,
           "expected_keywords": [
             "July 15",
             "July"
@@ -345,10 +350,10 @@
         },
         {
           "question": "How much would I save with the early payment discount?",
-          "answer": "According to the document, if paid within 10 days, there is a 2% discount. To calculate the amount saved, we would need to know the total due, which is $32,550.00. Therefore, the amount saved with the early payment discount would be:\n\n$32,550.00 x 0.02 = $651.00",
+          "answer": "According to the document, if paid within 10 days, there is a 2% discount. Therefore, you would save $652.60 (2% of $32,550.00).",
           "success": true,
           "accurate": true,
-          "response_time": 17.64177107810974,
+          "response_time": 22.655300855636597,
           "expected_keywords": [
             "651",
             "discount"
@@ -359,7 +364,7 @@
           "answer": "I cannot find that specific information in the provided context.",
           "success": true,
           "accurate": false,
-          "response_time": 12.050289154052734,
+          "response_time": 10.233381032943726,
           "expected_keywords": [
             "150",
             "per hour",
@@ -372,14 +377,14 @@
         "total_questions": 10,
         "successful_answers": 10,
         "accurate_answers": 9,
-        "total_time": 110.4682285785675,
-        "average_time": 11.04682285785675,
+        "total_time": 106.76905012130737,
+        "average_time": 10.676905012130737,
         "success_rate": 100.0,
         "accuracy_rate": 90.0
       }
     },
-    "mistral": {
-      "model": "mistral",
+    "mistral:latest": {
+      "model": "mistral:latest",
       "document_id": "5150e9280fb3c35f",
       "questions": [
         {
@@ -387,17 +392,17 @@
           "answer": "The invoice number is INV-2025-001.",
           "success": true,
           "accurate": true,
-          "response_time": 26.163307189941406,
+          "response_time": 46.50193524360657,
           "expected_keywords": [
             "INV-2025-001"
           ]
         },
         {
           "question": "What is the total amount due?",
-          "answer": "The total amount due is $32,550.00 according to the provided context.",
+          "answer": "The total amount due is $32,550.00.",
           "success": true,
           "accurate": true,
-          "response_time": 26.10839581489563,
+          "response_time": 14.011986017227173,
           "expected_keywords": [
             "32,550",
             "32550"
@@ -405,10 +410,10 @@
         },
         {
           "question": "Who is being billed?",
-          "answer": "Tech Startup Inc. is being billed as per the invoice details. The bill to address is 456 Innovation Drive, San Francisco, CA 94105. The contact person is John Doe and his email is john@techstartup.com.",
+          "answer": "Tech Startup Inc.",
           "success": true,
           "accurate": true,
-          "response_time": 29.32229971885681,
+          "response_time": 10.397044897079468,
           "expected_keywords": [
             "Tech Startup Inc"
           ]
@@ -418,7 +423,7 @@
           "answer": "The tax rate is 8.5%.",
           "success": true,
           "accurate": true,
-          "response_time": 14.422663927078247,
+          "response_time": 16.14537787437439,
           "expected_keywords": [
             "8.5%",
             "8.5"
@@ -426,10 +431,10 @@
         },
         {
           "question": "What services were provided in this invoice?",
-          "answer": "The services provided in this invoice are as follows:\n1. AI Model Development (1 project)\n2. Data Processing Pipeline (40 hours)\n3. Machine Learning Consultation (20 hours)\n4. Custom API Integration (1 system)",
+          "answer": "The services provided in this invoice include AI Model Development, Data Processing Pipeline, Machine Learning Consultation, and Custom API Integration. Additionally, the invoice covers a custom AI solution with Natural language processing model for customer service automation, Real-time data processing pipeline handling 1M+ requests/day, RESTful API with 99.9% uptime SLA, Comprehensive documentation and training materials, a 90-day warranty and support period, and the transfer of all intellectual property rights upon full payment.",
           "success": true,
           "accurate": true,
-          "response_time": 23.057507038116455,
+          "response_time": 28.832643270492554,
           "expected_keywords": [
             "AI Model",
             "Data Processing",
@@ -441,7 +446,7 @@
           "answer": "The payment is due within 30 days.",
           "success": true,
           "accurate": true,
-          "response_time": 16.997269868850708,
+          "response_time": 10.093679189682007,
           "expected_keywords": [
             "30 days",
             "thirty days"
@@ -449,10 +454,10 @@
         },
         {
           "question": "What discount is offered for early payment?",
-          "answer": "2% discount if paid within 10 days.",
+          "answer": "The document does not specify an exact discount offered for early payment. However, it mentions that there is a 2% discount if paid within 10 days.",
           "success": true,
           "accurate": true,
-          "response_time": 13.847877025604248,
+          "response_time": 17.162808179855347,
           "expected_keywords": [
             "2%",
             "2 percent",
@@ -464,7 +469,7 @@
           "answer": "The training session is scheduled for July 15, 2025.",
           "success": true,
           "accurate": true,
-          "response_time": 14.802213907241821,
+          "response_time": 11.754024028778076,
           "expected_keywords": [
             "July 15",
             "July"
@@ -472,10 +477,10 @@
         },
         {
           "question": "How much would I save with the early payment discount?",
-          "answer": "I cannot find that specific information about the amount you would save with the early payment discount in the provided context. The document mentions a 2% discount if paid within 10 days but does not specify the exact savings for the given invoice total.",
+          "answer": "I cannot find that specific information regarding how much you would save with the early payment discount in the provided context. The document mentions a 2% discount if paid within 10 days, but it does not provide the amount of money this discount would represent.",
           "success": true,
           "accurate": true,
-          "response_time": 20.497490167617798,
+          "response_time": 18.56343698501587,
           "expected_keywords": [
             "651",
             "discount"
@@ -483,10 +488,10 @@
         },
         {
           "question": "What is the hourly rate for data processing?",
-          "answer": "The hourly rate for data processing in this document is $150.00. This amount is based on 40 hours of data processing work, as indicated in the table under the \"INVOICE DETAILS\" section.",
+          "answer": "I can find that specific information in the provided context. The hourly rate for data processing is $150.00.",
           "success": true,
           "accurate": true,
-          "response_time": 20.550359964370728,
+          "response_time": 13.635782957077026,
           "expected_keywords": [
             "150",
             "per hour",
@@ -499,8 +504,8 @@
         "total_questions": 10,
         "successful_answers": 10,
         "accurate_answers": 10,
-        "total_time": 205.76938462257385,
-        "average_time": 20.576938462257385,
+        "total_time": 187.09871864318848,
+        "average_time": 18.70987186431885,
         "success_rate": 100.0,
         "accuracy_rate": 100.0
       }
@@ -508,42 +513,42 @@
   },
   "summary": {
     "total_models": 4,
-    "models_with_errors": 1,
+    "models_with_errors": 0,
     "models_with_422": 0,
-    "best_accuracy_model": "deepseek-coder",
-    "fastest_model": "llama3",
+    "best_accuracy_model": "mistral:latest",
+    "fastest_model": "llama3:8b",
     "model_rankings": [
       {
-        "model": "deepseek-coder",
+        "model": "mistral:latest",
         "success_rate": 100.0,
         "accuracy_rate": 100.0,
-        "average_time": 18.09328966140747,
+        "average_time": 18.70987186431885,
         "has_422": false,
         "error_count": 0
       },
       {
-        "model": "mistral",
-        "success_rate": 100.0,
-        "accuracy_rate": 100.0,
-        "average_time": 20.576938462257385,
-        "has_422": false,
-        "error_count": 0
-      },
-      {
-        "model": "llama3",
+        "model": "deepseek-llm:7b-chat",
         "success_rate": 100.0,
         "accuracy_rate": 90.0,
-        "average_time": 11.04682285785675,
+        "average_time": 16.67734875679016,
         "has_422": false,
         "error_count": 0
       },
       {
-        "model": "deepseek-llm",
-        "success_rate": 90.0,
+        "model": "llama3:8b",
+        "success_rate": 100.0,
         "accuracy_rate": 90.0,
-        "average_time": 24.037790086534287,
+        "average_time": 10.676905012130737,
         "has_422": false,
-        "error_count": 1
+        "error_count": 0
+      },
+      {
+        "model": "deepseek-coder:6.7b-instruct",
+        "success_rate": 100.0,
+        "accuracy_rate": 80.0,
+        "average_time": 18.133512878417967,
+        "has_422": false,
+        "error_count": 0
       }
     ]
   },
