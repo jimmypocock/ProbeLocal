@@ -56,9 +56,30 @@ API_PID=$!
 echo "⏳ Waiting for API to be ready..."
 sleep 5
 
+# Check port availability
+echo "🔍 Checking port availability..."
+python check_port.py 2402
+PORT_STATUS=$?
+
+if [ $PORT_STATUS -eq 0 ]; then
+    echo "✅ Using preferred port 2402"
+    STREAMLIT_PORT=2402
+elif [ $PORT_STATUS -eq 1 ]; then
+    # Port script found alternative
+    STREAMLIT_PORT=$(python check_port.py 2402 | tail -n 1 | grep -E '^[0-9]+$')
+    echo "⚠️  Using alternative port $STREAMLIT_PORT"
+else
+    echo "💡 Using system-assigned port"
+    STREAMLIT_PORT=""
+fi
+
 # Start Streamlit
 echo "🎨 Starting web interface..."
-streamlit run app.py
+if [ -n "$STREAMLIT_PORT" ]; then
+    streamlit run app.py --server.port $STREAMLIT_PORT
+else
+    streamlit run app.py
+fi
 
 # Cleanup on exit
 echo "🧹 Cleaning up..."

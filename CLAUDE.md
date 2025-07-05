@@ -24,28 +24,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Monitor system resources**: `make monitor`
 - **List available models**: `make models`
 - **Test model compatibility**: `make test-models` or `python test_models.py --models deepseek`
+- **Test all file formats**: `make test-multiformat` - Comprehensive testing across Excel, Markdown, Word, Images
+- **Quick format test**: `make test-formats-quick` - Fast test of new file format support
+- **Test app functionality**: `make test-app` - Test upload, delete, model switching, Q&A, error handling
 - **Fix deepseek issues**: `python fix_deepseek.py`
 - **Lint/typecheck**: No specific commands configured - ask user if needed
 
 ## Architecture Overview
 
-ProbeLocal is a Retrieval-Augmented Generation (RAG) system with three main components:
+Greg is an AI playground that currently features a Retrieval-Augmented Generation (RAG) system with three main components:
 
 1. **Ollama Service** (port 11434): Runs local LLMs (Mistral, Llama, Phi)
 2. **FastAPI Backend** (port 8080): Handles PDF processing, vector storage, and Q&A logic
-3. **Streamlit Frontend** (port 8501): Provides web UI for document upload and querying
+3. **Streamlit Frontend** (port 2402): Provides web UI for document upload and querying
 
 ### Key Modules
 - `src/config.py`: Environment configuration and memory optimization
-- `src/document_processor.py`: PDF chunking with LangChain
+- `src/document_processor.py`: Multi-format document processing (PDF, Excel, Word, Markdown, Images)
 - `src/local_llm.py`: Ollama integration for LLM queries
 - `src/qa_chain.py`: RAG pipeline with FAISS vector search
 - `main.py`: FastAPI endpoints for document management
 - `app.py`: Streamlit UI with session state management
 
 ### Data Flow
-1. PDFs uploaded via Streamlit → FastAPI
-2. FastAPI processes PDFs → chunks → embeddings → FAISS vector store
+1. Documents uploaded via Streamlit (port 2402) → FastAPI (port 8080)
+2. FastAPI processes documents → chunks → embeddings → FAISS vector store
 3. User queries → FAISS similarity search → context retrieval → Ollama LLM → response
 
 ### Memory Optimization

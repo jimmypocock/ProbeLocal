@@ -38,3 +38,21 @@ ollama.log
 # Temporary files
 temp/
 tmp/
+
+# Test artifacts
+tests/screenshots/
+tests/results/
+.streamlit/
+
+# Backup and temporary scripts
+app_backup.py
+app_original.py
+app_fragment.py
+app_simple_delete.py
+check_port.py
+
+# Keep test fixtures - they're valuable for other developers
+# Only ignore the test fixture generator scripts (already listed above)
+
+# Cleanup script (one-time use)
+cleanup_before_push.py

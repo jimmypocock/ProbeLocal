@@ -1,8 +1,8 @@
-# ProbeLocal Testing Suite
+# Greg Testing Suite
 
 ## Overview
 
-ProbeLocal includes comprehensive testing capabilities to evaluate model performance across different use cases:
+Greg includes comprehensive testing capabilities to evaluate model performance across different use cases:
 
 1. **Invoice Q&A Testing** - Tests models with structured data extraction from invoices
 2. **Story Comprehension Testing** - Tests models' ability to understand context, inferences, and meaning

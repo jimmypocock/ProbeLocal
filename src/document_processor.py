@@ -5,8 +5,14 @@ from typing import List, Tuple, Dict
 import pickle
 import time
 from datetime import datetime
+import csv
+import pandas as pd
 
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import (
+    PyPDFLoader,
+    TextLoader,
+    CSVLoader
+)
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_community.vectorstores import FAISS
@@ -33,6 +39,361 @@ class DocumentProcessor:
             length_function=len,
             separators=["\n\n", "\n", " ", ""]
         )
+        
+        # File type mappings
+        self.file_loaders = {
+            'pdf': PyPDFLoader,
+            'txt': TextLoader,
+            'text': TextLoader,
+            'csv': self._load_csv,  # Custom CSV loader for better formatting
+            'md': self._load_markdown,  # Custom Markdown loader
+            'markdown': self._load_markdown,
+            'docx': self._load_docx,  # Custom Word loader
+            'pptx': self._load_pptx,  # TODO: Custom PowerPoint loader
+            'xlsx': self._load_xlsx,  # Custom Excel loader
+            'xls': self._load_xlsx,
+            'png': self._load_image,  # Custom image loader with OCR
+            'jpg': self._load_image,  # Custom image loader with OCR
+            'jpeg': self._load_image
+        }
+
+    def detect_file_type(self, filename: str) -> str:
+        """Detect file type from filename extension"""
+        ext = filename.lower().split('.')[-1]
+        
+        # Map extensions to file types
+        type_mapping = {
+            'pdf': 'pdf',
+            'txt': 'text',
+            'csv': 'csv',
+            'md': 'markdown',
+            'markdown': 'markdown',
+            'docx': 'docx',
+            'pptx': 'pptx',
+            'xlsx': 'xlsx',
+            'xls': 'xlsx',
+            'png': 'png',
+            'jpg': 'jpg',
+            'jpeg': 'jpg'
+        }
+        
+        if ext not in type_mapping:
+            raise ValueError(f"Unsupported file type: .{ext}")
+        
+        return type_mapping[ext]
+
+    def _load_csv(self, file_path: str) -> List[Document]:
+        """Custom CSV loader that preserves structure better"""
+        documents = []
+        
+        try:
+            # Read CSV file
+            df = pd.read_csv(file_path)
+            
+            # Convert each row to a document
+            for idx, row in df.iterrows():
+                # Create a formatted text representation of the row
+                content_parts = []
+                for col, value in row.items():
+                    if pd.notna(value):  # Skip NaN values
+                        content_parts.append(f"{col}: {value}")
+                
+                content = "\n".join(content_parts)
+                
+                # Create document with metadata
+                doc = Document(
+                    page_content=content,
+                    metadata={
+                        "source": file_path,
+                        "row": idx,
+                        "type": "csv"
+                    }
+                )
+                documents.append(doc)
+                
+        except Exception as e:
+            print(f"Error loading CSV: {e}")
+            # Fallback to simple CSVLoader
+            loader = CSVLoader(file_path)
+            documents = loader.load()
+        
+        return documents
+    
+    def _load_markdown(self, file_path: str) -> List[Document]:
+        """Custom Markdown loader"""
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Split by major sections (headers)
+        sections = []
+        current_section = []
+        
+        for line in content.split('\n'):
+            if line.startswith('#') and current_section:
+                # New section, save the previous one
+                sections.append('\n'.join(current_section))
+                current_section = [line]
+            else:
+                current_section.append(line)
+        
+        # Don't forget the last section
+        if current_section:
+            sections.append('\n'.join(current_section))
+        
+        # Create documents from sections
+        documents = []
+        for i, section in enumerate(sections):
+            if section.strip():  # Skip empty sections
+                doc = Document(
+                    page_content=section,
+                    metadata={
+                        "source": file_path,
+                        "section": i,
+                        "type": "markdown"
+                    }
+                )
+                documents.append(doc)
+        
+        # If no sections found, treat entire file as one document
+        if not documents:
+            doc = Document(
+                page_content=content,
+                metadata={
+                    "source": file_path,
+                    "type": "markdown"
+                }
+            )
+            documents.append(doc)
+        
+        return documents
+    
+    def _load_docx(self, file_path: str) -> List[Document]:
+        """Custom Word document loader"""
+        try:
+            from docx import Document as DocxDocument
+        except ImportError:
+            print("Installing python-docx...")
+            import subprocess
+            subprocess.check_call(["pip", "install", "python-docx"])
+            from docx import Document as DocxDocument
+        
+        doc = DocxDocument(file_path)
+        
+        # Extract all paragraphs and tables
+        content_blocks = []
+        
+        # Process paragraphs
+        current_block = []
+        for para in doc.paragraphs:
+            if para.text.strip():
+                # Check if it's a heading
+                if para.style.name.startswith('Heading'):
+                    if current_block:
+                        content_blocks.append('\n'.join(current_block))
+                        current_block = []
+                    current_block.append(para.text)
+                else:
+                    current_block.append(para.text)
+        
+        # Add the last block
+        if current_block:
+            content_blocks.append('\n'.join(current_block))
+        
+        # Process tables
+        for table in doc.tables:
+            table_text = []
+            for row in table.rows:
+                row_text = []
+                for cell in row.cells:
+                    row_text.append(cell.text.strip())
+                table_text.append(' | '.join(row_text))
+            if table_text:
+                content_blocks.append('\n'.join(table_text))
+        
+        # Create documents from content blocks
+        documents = []
+        for i, block in enumerate(content_blocks):
+            if block.strip():
+                doc = Document(
+                    page_content=block,
+                    metadata={
+                        "source": file_path,
+                        "block": i,
+                        "type": "docx"
+                    }
+                )
+                documents.append(doc)
+        
+        # If no content found, create a single empty document
+        if not documents:
+            doc = Document(
+                page_content="Empty document",
+                metadata={
+                    "source": file_path,
+                    "type": "docx"
+                }
+            )
+            documents.append(doc)
+        
+        return documents
+    
+    def _load_pptx(self, file_path: str) -> List[Document]:
+        """Placeholder for PowerPoint loader"""
+        raise NotImplementedError("PowerPoint support coming soon")
+    
+    def _load_xlsx(self, file_path: str) -> List[Document]:
+        """Custom Excel loader that processes all sheets"""
+        try:
+            import openpyxl
+        except ImportError:
+            print("Installing openpyxl...")
+            import subprocess
+            subprocess.check_call(["pip", "install", "openpyxl"])
+            import openpyxl
+        
+        documents = []
+        
+        # Load the workbook
+        wb = openpyxl.load_workbook(file_path, data_only=True)
+        
+        # Process each sheet
+        for sheet_idx, sheet_name in enumerate(wb.sheetnames):
+            sheet = wb[sheet_name]
+            
+            # Skip empty sheets
+            if sheet.max_row == 0 or sheet.max_column == 0:
+                continue
+            
+            # Extract content from the sheet
+            sheet_content = []
+            sheet_content.append(f"Sheet: {sheet_name}")
+            sheet_content.append("=" * 50)
+            
+            # Process rows
+            for row_idx, row in enumerate(sheet.iter_rows(values_only=True), 1):
+                # Filter out completely empty rows
+                if all(cell is None for cell in row):
+                    continue
+                
+                # Format row content
+                row_text = []
+                for col_idx, cell_value in enumerate(row):
+                    if cell_value is not None:
+                        # Convert to string and clean up
+                        cell_str = str(cell_value).strip()
+                        if cell_str:
+                            # If it's the first row and looks like headers, format differently
+                            if row_idx == 1 and col_idx == 0:
+                                row_text.append(cell_str)
+                            else:
+                                row_text.append(cell_str)
+                
+                if row_text:
+                    # Join cells with appropriate separator
+                    if len(row_text) > 1:
+                        sheet_content.append(" | ".join(row_text))
+                    else:
+                        sheet_content.append(row_text[0])
+            
+            # Create a document for this sheet
+            if len(sheet_content) > 2:  # More than just header
+                content = "\n".join(sheet_content)
+                doc = Document(
+                    page_content=content,
+                    metadata={
+                        "source": file_path,
+                        "sheet_name": sheet_name,
+                        "sheet_index": sheet_idx,
+                        "type": "xlsx"
+                    }
+                )
+                documents.append(doc)
+        
+        # If no content found, create a single document
+        if not documents:
+            doc = Document(
+                page_content="Empty Excel file",
+                metadata={
+                    "source": file_path,
+                    "type": "xlsx"
+                }
+            )
+            documents.append(doc)
+        
+        return documents
+    
+    def _load_image(self, file_path: str) -> List[Document]:
+        """Custom image loader with OCR text extraction"""
+        try:
+            import pytesseract
+            from PIL import Image
+        except ImportError:
+            print("Installing OCR dependencies...")
+            import subprocess
+            subprocess.check_call(["pip", "install", "pytesseract", "Pillow"])
+            import pytesseract
+            from PIL import Image
+        
+        documents = []
+        
+        try:
+            # Load and process the image
+            image = Image.open(file_path)
+            
+            # Extract text using OCR
+            extracted_text = pytesseract.image_to_string(image)
+            
+            # Clean up the extracted text
+            lines = []
+            for line in extracted_text.split('\n'):
+                line = line.strip()
+                if line:  # Skip empty lines
+                    lines.append(line)
+            
+            # Create content
+            if lines:
+                content = '\n'.join(lines)
+                
+                # Add image description header
+                file_ext = file_path.lower().split('.')[-1]
+                content = f"Image Content (OCR Extracted Text):\n{'-'*40}\n{content}"
+            else:
+                # No text found - this is likely a visual content image
+                file_ext = file_path.lower().split('.')[-1]
+                content = f"Visual Image Content ({file_ext.upper()}):\n{'-'*40}\n"
+                content += "This appears to be a visual image with no extractable text content. "
+                content += "The image contains visual elements that would require computer vision analysis "
+                content += "to describe. This could include objects, people, animals, scenery, or other "
+                content += "visual content that cannot be extracted through OCR text recognition."
+            
+            # Create document
+            doc = Document(
+                page_content=content,
+                metadata={
+                    "source": file_path,
+                    "type": file_ext,
+                    "extraction_method": "OCR",
+                    "image_format": file_ext.upper()
+                }
+            )
+            documents.append(doc)
+            
+        except Exception as e:
+            print(f"Error processing image: {e}")
+            # Create a basic document even if OCR fails
+            file_ext = file_path.lower().split('.')[-1]
+            doc = Document(
+                page_content=f"Image file ({file_ext.upper()}) - OCR processing failed",
+                metadata={
+                    "source": file_path,
+                    "type": file_ext,
+                    "extraction_method": "failed",
+                    "error": str(e)
+                }
+            )
+            documents.append(doc)
+        
+        return documents
 
     def generate_document_id(self, file_path: str) -> str:
         """Generate unique ID for document"""
@@ -40,27 +401,54 @@ class DocumentProcessor:
             file_hash = hashlib.sha256(f.read()).hexdigest()
         return file_hash[:16]
 
-    def process_pdf(self, file_path: str, filename: str) -> Tuple[str, int, int, float]:
-        """Process PDF with progress tracking"""
+    def process_file(self, file_path: str, filename: str, chunk_size: int = None) -> Tuple[str, int, int, float]:
+        """Process any supported file type with optional dynamic chunk size"""
         start_time = time.time()
-
-        print(f"Loading PDF: {filename}")
-        loader = PyPDFLoader(file_path)
-        documents = loader.load()
+        
+        # Detect file type
+        file_type = self.detect_file_type(filename)
+        
+        print(f"Loading {file_type.upper()} file: {filename}")
+        
+        # Load documents based on file type
+        if file_type in self.file_loaders:
+            loader_class = self.file_loaders[file_type]
+            
+            if callable(loader_class) and loader_class.__name__.startswith('_'):
+                # Custom loader method
+                documents = loader_class(file_path)
+            else:
+                # Standard LangChain loader
+                loader = loader_class(file_path)
+                documents = loader.load()
+        else:
+            raise ValueError(f"No loader available for file type: {file_type}")
 
         doc_id = self.generate_document_id(file_path)
 
-        print(f"Splitting into chunks...")
-        chunks = self.text_splitter.split_documents(documents)
+        # Use dynamic chunk size if provided, otherwise use default
+        if chunk_size is not None:
+            print(f"Splitting into chunks (custom size: {chunk_size})...")
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=chunk_size,
+                chunk_overlap=self.config.CHUNK_OVERLAP,
+                length_function=len,
+                separators=["\n\n", "\n", " ", ""]
+            )
+            chunks = text_splitter.split_documents(documents)
+        else:
+            print(f"Splitting into chunks (default size: {self.config.CHUNK_SIZE})...")
+            chunks = self.text_splitter.split_documents(documents)
 
         # Add metadata
         for i, chunk in enumerate(chunks):
             chunk.metadata.update({
                 'document_id': doc_id,
                 'filename': filename,
+                'file_type': file_type,
                 'chunk_index': i,
                 'total_chunks': len(chunks),
-                'page': chunk.metadata.get('page', 0)
+                'page': chunk.metadata.get('page', chunk.metadata.get('row', 0))
             })
 
         print(f"Creating embeddings for {len(chunks)} chunks...")
@@ -98,6 +486,7 @@ class DocumentProcessor:
         metadata = {
             'document_id': doc_id,
             'filename': filename,
+            'file_type': file_type,
             'pages': len(documents),
             'chunks': len(chunks),
             'upload_date': datetime.now(),
@@ -116,6 +505,10 @@ class DocumentProcessor:
         self._cleanup_old_documents()
         
         return doc_id, len(documents), len(chunks), processing_time
+
+    def process_pdf(self, file_path: str, filename: str) -> Tuple[str, int, int, float]:
+        """Legacy method for backward compatibility - redirects to process_file"""
+        return self.process_file(file_path, filename)
 
     def load_vector_store(self, document_id: str) -> FAISS:
         """Load existing vector store"""

@@ -1,0 +1,16 @@
+Invoice_Number,Date,Customer,Item_Description,Quantity,Unit_Price,Line_Total,Tax_Rate,Payment_Terms
+INV-2025-003,2025-01-20,DataTech Solutions,Database Optimization Service,40,175.00,7000.00,8.75,Net 45
+INV-2025-003,2025-01-20,DataTech Solutions,Performance Tuning Analysis,1,2500.00,2500.00,8.75,Net 45
+INV-2025-003,2025-01-20,DataTech Solutions,Query Optimization Package,60,150.00,9000.00,8.75,Net 45
+INV-2025-003,2025-01-20,DataTech Solutions,Emergency Support Hours,20,300.00,6000.00,8.75,Net 45
+INV-2025-003,2025-01-20,DataTech Solutions,Monthly Monitoring Service,6,1200.00,7200.00,8.75,Net 45
+INV-2025-003,2025-01-20,DataTech Solutions,Documentation and Training,1,3500.00,3500.00,8.75,Net 45
+
+SUMMARY:,,,,,,,,
+Subtotal,,,,,,35200.00,,
+Early_Payment_Discount,,,,,,2%_if_paid_within_15_days,,
+Tax_Amount,,,,,,3080.00,,
+Total_Due,,,,,,38280.00,,
+Due_Date,,,,,,2025-03-06,,
+Training_Date,,,,,,2025-02-15,,
+Support_Contact,,,,,,support@dbexperts.com,,

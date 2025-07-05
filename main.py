@@ -10,10 +10,13 @@ from pathlib import Path
 from typing import Dict, Any
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from src.config import Config
 from src.document_processor import DocumentProcessor
@@ -30,6 +33,9 @@ logger = logging.getLogger(__name__)
 config = Config()
 config.create_directories()
 
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 # Global instances
 doc_processor = None
 qa_chain = None
@@ -39,6 +45,7 @@ class QuestionRequest(BaseModel):
     document_id: str
     max_results: int = 5
     model_name: str = None  # Optional model override
+    temperature: float = 0.7  # Optional temperature override
 
 class UploadResponse(BaseModel):
     document_id: str
@@ -74,26 +81,38 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="PDF Q&A API - M3 Optimized",
-    description="100% Free, Local, and Private PDF Question Answering",
-    version="1.0.0",
+    title="Greg API - AI Playground",
+    description="100% Free, Local, and Private Document Question Answering. Supports PDF, TXT, CSV, Markdown, Word, Excel, and Image files.",
+    version="1.1.0",
     lifespan=lifespan
 )
 
-# Add CORS middleware
+# Add CORS middleware - Allow common Streamlit ports
+streamlit_origins = [
+    "http://localhost:2402",  # Greg's preferred port
+    "http://localhost:8501",  # Streamlit default
+    "http://localhost:8502",  # Common alternative
+    "http://localhost:8503",  # Common alternative
+] + [f"http://localhost:{port}" for port in range(2402, 2500)]  # Range for port search
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8501"],  # Streamlit default
+    allow_origins=streamlit_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Add rate limiter to app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 @app.get("/")
 async def root():
     return {
-        "message": "PDF Q&A API - M3 MacBook Air Optimized",
+        "message": "Greg API - Your AI Playground",
         "status": "running",
+        "supported_files": ["pdf", "txt", "csv", "md", "docx", "xlsx", "png", "jpg"],
         "endpoints": {
             "upload": "/upload",
             "ask": "/ask",
@@ -139,12 +158,26 @@ def get_qa_chain():
     return qa_chain
 
 @app.post("/upload", response_model=UploadResponse)
-async def upload_pdf(file: UploadFile = File(...)):
-    """Upload and process a PDF file"""
+@limiter.limit("10/minute")  # 10 uploads per minute per IP
+async def upload_file(
+    request: Request,
+    file: UploadFile = File(...),
+    model: str = Form("mistral"),
+    chunk_size: int = Form(800),
+    temperature: float = Form(0.7)
+):
+    """Upload and process a document file with dynamic settings"""
+    
+    # Supported file extensions
+    supported_extensions = ['.pdf', '.txt', '.csv', '.md', '.docx', '.xlsx', '.png', '.jpg', '.jpeg']
     
     # Validate file
-    if not file.filename.endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    file_ext = Path(file.filename).suffix.lower()
+    if file_ext not in supported_extensions:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Unsupported file type. Supported types: {', '.join(supported_extensions)}"
+        )
     
     # Check file size
     contents = await file.read()
@@ -163,13 +196,14 @@ async def upload_pdf(file: UploadFile = File(...)):
         with open(temp_path, 'wb') as f:
             f.write(contents)
         
-        logger.info(f"Processing PDF: {file.filename}")
+        logger.info(f"Processing file: {file.filename}")
         
-        # Process the PDF with lazy initialization
+        # Process the file with lazy initialization and dynamic settings
         processor = get_doc_processor()
-        doc_id, pages, chunks, processing_time = processor.process_pdf(
+        doc_id, pages, chunks, processing_time = processor.process_file(
             str(temp_path),
-            file.filename
+            file.filename,
+            chunk_size=chunk_size if chunk_size != 800 else None  # Only pass if different from default
         )
         
         # Clean up temporary file
@@ -188,7 +222,7 @@ async def upload_pdf(file: UploadFile = File(...)):
         if temp_path.exists():
             os.remove(temp_path)
         
-        logger.error(f"Error processing PDF: {e}", exc_info=True)
+        logger.error(f"Error processing file: {e}", exc_info=True)
         # Return more detailed error information
         error_msg = str(e)
         if "Ollama" in error_msg:
@@ -196,19 +230,21 @@ async def upload_pdf(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=error_msg)
 
 @app.post("/ask", response_model=AnswerResponse)
-async def ask_question(request: QuestionRequest):
+@limiter.limit("60/minute")  # 60 questions per minute per IP
+async def ask_question(request: Request, question_request: QuestionRequest):
     """Ask a question about a processed document"""
     
     try:
-        logger.info(f"Question: {request.question} for document: {request.document_id}")
+        logger.info(f"Question: {question_request.question} for document: {question_request.document_id}")
         
         # Get answer with lazy initialization
         chain = get_qa_chain()
         result = chain.answer_question(
-            question=request.question,
-            document_id=request.document_id,
-            max_results=request.max_results,
-            model_name=request.model_name
+            question=question_request.question,
+            document_id=question_request.document_id,
+            max_results=question_request.max_results,
+            model_name=question_request.model_name,
+            temperature=question_request.temperature
         )
         
         return AnswerResponse(**result)
@@ -242,6 +278,65 @@ async def list_documents():
         
     except Exception as e:
         logger.error(f"Error listing documents: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/storage-stats")
+async def get_storage_stats():
+    """Get storage statistics for vector stores"""
+    try:
+        total_size = 0
+        document_count = 0
+        documents_info = []
+        
+        # Calculate size for each vector store
+        for vector_dir in config.VECTOR_STORE_DIR.glob("*.faiss"):
+            if vector_dir.is_dir():
+                dir_size = 0
+                # Calculate directory size
+                for file_path in vector_dir.rglob("*"):
+                    if file_path.is_file():
+                        dir_size += file_path.stat().st_size
+                
+                doc_id = vector_dir.stem
+                
+                # Get metadata if available
+                metadata_path = config.VECTOR_STORE_DIR / f"{doc_id}.metadata"
+                doc_name = doc_id[:8] + "..."  # Default shortened ID
+                
+                if metadata_path.exists():
+                    import pickle
+                    with open(metadata_path, 'rb') as f:
+                        metadata = pickle.load(f)
+                        doc_name = metadata.get('filename', doc_name)
+                        
+                documents_info.append({
+                    "name": doc_name,
+                    "size_mb": round(dir_size / (1024 * 1024), 2)
+                })
+                
+                total_size += dir_size
+                document_count += 1
+        
+        # Add metadata files to total size
+        for metadata_file in config.VECTOR_STORE_DIR.glob("*.metadata"):
+            if metadata_file.is_file():
+                total_size += metadata_file.stat().st_size
+        
+        # Get directory path for display
+        storage_path = str(config.VECTOR_STORE_DIR.absolute())
+        
+        return {
+            "total_size_mb": round(total_size / (1024 * 1024), 2),
+            "total_size_gb": round(total_size / (1024 * 1024 * 1024), 3),
+            "document_count": document_count,
+            "documents": sorted(documents_info, key=lambda x: x['size_mb'], reverse=True)[:5],  # Top 5 largest
+            "storage_path": storage_path,
+            "max_documents": int(os.getenv('MAX_DOCUMENTS', '20')),
+            "cleanup_days": int(os.getenv('CLEANUP_DAYS', '7'))
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting storage stats: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/documents/{document_id}")

@@ -95,10 +95,14 @@ Answer:"""
         document_id: str,
         max_results: int = 5,
         stream: bool = False,
-        model_name: str = None
+        model_name: str = None,
+        temperature: float = None
     ) -> Dict[str, Any]:
         """Answer with optional streaming and model-specific configuration"""
         start_time = time.time()
+        
+        # Validate document exists first (this will raise ValueError if not found)
+        vector_store = self.doc_processor.load_vector_store(document_id)
         
         # Use specified model or default
         if model_name and model_name != self.config.LOCAL_LLM_MODEL:
@@ -111,7 +115,7 @@ Answer:"""
                 # Create a new LLM instance with the requested model and specific parameters
                 llm = LangchainOllama(
                     model=model_name,
-                    temperature=self.config.TEMPERATURE,
+                    temperature=temperature if temperature is not None else self.config.TEMPERATURE,
                     top_p=self.config.TOP_P,
                     **model_params  # Use model-specific parameters
                 )
@@ -131,7 +135,7 @@ Answer:"""
                 try:
                     llm = LangchainOllama(
                         model=model_name,
-                        temperature=self.config.TEMPERATURE,
+                        temperature=temperature if temperature is not None else self.config.TEMPERATURE,
                         top_p=self.config.TOP_P,
                         num_ctx=1024  # Minimal context
                     )
@@ -145,12 +149,19 @@ Answer:"""
                         'error': str(e2)
                     }
         else:
-            llm = self.llm
+            # Use default model but check if custom temperature is requested
+            if temperature is not None and temperature != self.config.TEMPERATURE:
+                # Create new LLM instance with custom temperature
+                llm = LangchainOllama(
+                    model=self.config.LOCAL_LLM_MODEL,
+                    temperature=temperature,
+                    top_p=self.config.TOP_P,
+                    num_ctx=self.config.MAX_CONTEXT_LENGTH
+                )
+            else:
+                llm = self.llm
 
         try:
-            # Load vector store
-            vector_store = self.doc_processor.load_vector_store(document_id)
-
             # Create retriever with similarity search
             retriever = vector_store.as_retriever(
                 search_type="similarity",
@@ -200,6 +211,9 @@ Answer:"""
                 'llm_model': model_name if model_name else self.config.LOCAL_LLM_MODEL
             }
             
+        except ValueError as e:
+            # Re-raise ValueError so it can be caught as 404 in the API
+            raise e
         except Exception as e:
             processing_time = time.time() - start_time
             error_msg = str(e)

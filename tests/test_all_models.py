@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive Model Testing Suite for ProbeLocal
+Comprehensive Model Testing Suite for Greg
 Tests all models with actual PDF processing and Q&A
 """
 
@@ -316,7 +316,7 @@ class ComprehensiveTester(ModelTester):
     
     def run_tests(self, models: List[str] = None):
         """Run comprehensive tests on all models"""
-        print("🚀 ProbeLocal Comprehensive Model Testing Suite\n")
+        print("🚀 Greg Comprehensive Model Testing Suite\n")
         
         # Check services
         print("Checking services...")
@@ -488,7 +488,7 @@ class ComprehensiveTester(ModelTester):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Comprehensive model testing for ProbeLocal")
+    parser = argparse.ArgumentParser(description="Comprehensive model testing for Greg")
     parser.add_argument("--models", nargs="+", help="Specific models to test")
     parser.add_argument("--pdf", help="Path to PDF file to test with")
     parser.add_argument("--questions", type=int, default=None, help="Number of questions to test")

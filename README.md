@@ -1,6 +1,6 @@
-# Probe Local: Complete Guide to Free PDF Q&A on M3 MacBook Air
+# Greg: Your AI Playground - Complete Guide for M3 MacBook Air
 
-**A privacy-focused PDF question-answering system built for M3 MacBook Air and Apple Silicon Macs. Uses Ollama and open-source LLMs to provide completely local, free document intelligence. Features a clean web UI, support for multiple AI models, and optimized performance for machines with 8-24GB RAM.**
+**Greg is your local AI playground for experimentation and development. Currently featuring PDF question-answering with plans for expansion into multiple AI capabilities. Built for M3 MacBook Air and Apple Silicon Macs, Greg uses Ollama and open-source LLMs to provide completely local, free AI assistance. Features a clean web UI, support for multiple AI models, and optimized performance for machines with 8-24GB RAM.**
 
 ## Why M3 MacBook Air is Perfect for This
 
@@ -539,12 +539,102 @@ This local solution excels at privacy, cost (free), and specific information ext
 | Complex Q&A | 5-7s       | 3-4s     | 40% faster |
 | Memory Used | 5-6GB      | 2-3GB    | 50% less   |
 
+## Testing Your Models
+
+Greg includes comprehensive testing capabilities to evaluate how well different Ollama models work with various file formats.
+
+### Comprehensive Testing
+
+Run the full test suite (all formats + models + unit tests):
+
+```bash
+make test
+```
+
+This tests all file formats across all available models and runs unit tests.
+
+### Quick Testing
+
+Fast smoke test of all file formats:
+
+```bash
+make test-quick
+```
+
+### Targeted Testing
+
+Test specific models or run only unit tests:
+
+```bash
+# Test specific models
+make test-models MODELS="mistral,llama3,deepseek"
+
+# Run unit tests only  
+make test-unit
+
+# Test specific formats via Python
+python tests/test_multiformat_models.py --formats "excel,images"
+```
+
+### File Formats Tested
+
+| Format | Files | Test Content |
+|--------|-------|--------------|
+| **Excel (.xlsx)** | Invoice + Story | Multi-sheet data, calculations, cross-references |
+| **Markdown (.md)** | Invoice + Story | Tables, headers, formatting preservation |
+| **Word (.docx)** | Invoice + Story | Complex documents with formatting |
+| **Images (.png/.jpg)** | Invoice + Story + Content | OCR text extraction, visual analysis |
+
+### What Each Test Reveals
+
+**Model Performance Metrics:**
+- **Success Rate**: % of questions answered without errors
+- **Accuracy Rate**: % of answers containing expected content  
+- **Response Time**: Average speed per format
+- **Error Analysis**: 422 errors, timeouts, compatibility issues
+
+**Format-Specific Insights:**
+- Which models handle Excel calculations best
+- OCR accuracy across different models
+- Markdown table parsing performance
+- Word document structure handling
+
+### Example Test Results
+
+```bash
+# Quick test all formats
+make test-formats-quick
+# Output: ✅ Excel, ✅ Markdown, ✅ Word, ✅ Images
+
+# Test mistral vs deepseek with Excel files
+python tests/test_multiformat_models.py --models "mistral,deepseek" --formats excel
+# Output: Detailed comparison of accuracy and speed
+```
+
+
+### Results Analysis
+
+All tests save JSON results to `tests/results/` showing:
+- Model comparison across formats
+- Response time analysis
+- Accuracy breakdowns by question type
+- Error patterns and compatibility issues
+
+### Best Practices
+
+1. **Start with quick test** (`make test-quick`) to verify setup
+2. **Run full suite** (`make test`) to compare all models
+3. **Check services** are running before testing (`make run`)
+4. **Monitor resources** during comprehensive testing
+5. **Use targeted tests** (`make test-models MODELS=...`) for specific comparisons
+
 ## Next Steps
 
 1. **Start Simple**: Use Phi for initial testing
-2. **Experiment**: Try different models for your use case
-3. **Optimize**: Tune parameters based on your needs
-4. **Scale**: Add more models as needed
+2. **Quick Test**: Run `make test-quick` to verify all formats work
+3. **Full Testing**: Run `make test` to compare all models across all formats
+4. **Optimize**: Tune parameters based on test results
+5. **Scale**: Add more models as needed
 
 ## Community Resources
 

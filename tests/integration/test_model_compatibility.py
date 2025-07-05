@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Model Compatibility Testing Framework for ProbeLocal
+Model Compatibility Testing Framework for Greg
 
 This script tests different models with various content types to ensure compatibility
 and identify model-specific parameter requirements.
@@ -278,7 +278,7 @@ def main():
     """Main function to run model tests"""
     import argparse
     
-    parser = argparse.ArgumentParser(description="Test Ollama models for ProbeLocal compatibility")
+    parser = argparse.ArgumentParser(description="Test Ollama models for Greg compatibility")
     parser.add_argument("--models", nargs="+", help="Specific models to test (default: all)")
     parser.add_argument("--quick", action="store_true", help="Run quick tests only")
     

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# ProbeLocal Comprehensive Test Runner
+# Greg Comprehensive Test Runner
 # Runs all test suites and generates a summary report
 
 set -e
 
-echo "🧪 ProbeLocal Comprehensive Test Suite"
+echo "🧪 Greg Comprehensive Test Suite"
 echo "====================================="
 echo ""
 

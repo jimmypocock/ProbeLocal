@@ -1,8 +1,8 @@
-# ProbeLocal Development Roadmap
+# Greg Development Roadmap
 
 ## Current State
 
-ProbeLocal is a functional RAG (Retrieval-Augmented Generation) system with:
+Greg is an AI playground that currently includes a functional RAG (Retrieval-Augmented Generation) system with:
 
 - Local LLM integration via Ollama (Mistral, Llama3, DeepSeek)
 - PDF document processing and vector storage

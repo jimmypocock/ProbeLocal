@@ -1,0 +1,62 @@
+ACME CORPORATION
+123 Business Boulevard
+San Francisco, CA 94105
+Phone: (555) 123-4567
+Email: billing@acmecorp.com
+
+INVOICE
+
+Invoice Number: INV-2025-002
+Date: January 15, 2025
+Due Date: February 14, 2025
+
+BILL TO:
+Innovation Labs Inc.
+789 Tech Park Drive
+Palo Alto, CA 94301
+Attn: Sarah Johnson
+Email: sarah@innovationlabs.com
+
+INVOICE DETAILS:
+
+Service Description                    Quantity    Unit Price    Total
+----------------------------------------------------------------------
+AI Consulting Services                 80 hours    $250.00       $20,000.00
+Custom Model Training                  1 project   $35,000.00    $35,000.00
+Data Pipeline Development              120 hours   $200.00       $24,000.00
+Technical Documentation Package        1 package   $5,000.00     $5,000.00
+Cloud Infrastructure Setup             1 setup     $8,500.00     $8,500.00
+Monthly Support & Maintenance          3 months    $3,000.00     $9,000.00
+
+----------------------------------------------------------------------
+                                                 Subtotal:     $101,500.00
+                                                 Discount:     -$1,500.00
+                                                 Tax (9.5%):    $9,500.00
+                                                 TOTAL DUE:    $109,500.00
+
+PAYMENT TERMS:
+- Net 30 days from invoice date
+- 3% discount if paid within 10 days (save $3,285.00)
+- Late payment fee: 1.5% per month
+- Accepted payment methods: Wire transfer, ACH, Check
+
+PROJECT NOTES:
+This invoice covers Phase 1 of the AI transformation project including:
+- Development of custom recommendation engine
+- Integration with existing customer database
+- Real-time data processing pipeline capable of 2M+ requests/day
+- Deployment to AWS cloud infrastructure
+- 3 months of post-launch support
+
+SPECIAL CONDITIONS:
+- Source code repository access will be granted upon 50% payment
+- Training workshop scheduled for February 20, 2025
+- Performance benchmarks: 99.5% uptime SLA
+- Monthly review meetings included in support package
+
+Thank you for your business!
+
+For questions regarding this invoice, please contact:
+Accounts Receivable Department
+Phone: (555) 123-4567 ext. 200
+Email: ar@acmecorp.com

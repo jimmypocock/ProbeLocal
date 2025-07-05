@@ -1,0 +1,11 @@
+Product,Category,Price,Stock,Rating,Description
+Greg Assistant Pro,AI Software,0,Unlimited,5.0,"Premium AI assistant with advanced features"
+Greg Assistant Basic,AI Software,0,Unlimited,4.5,"Free AI assistant for everyday use"
+Document Processor,Utility,0,Unlimited,4.8,"Process PDFs and text files locally"
+LLM Runner,Development Tool,0,Unlimited,4.7,"Run language models on your Mac"
+Vector Database,Storage,0,Unlimited,4.6,"Efficient vector storage for AI"
+Text Splitter,Utility,0,Unlimited,4.4,"Smart text chunking for better comprehension"
+Embedding Generator,AI Tool,0,Unlimited,4.9,"Generate embeddings for semantic search"
+Question Analyzer,AI Software,0,Unlimited,4.7,"Analyze and understand user questions"
+Response Generator,AI Software,0,Unlimited,4.8,"Generate accurate responses from context"
+File Converter,Utility,0,Unlimited,4.5,"Convert between different file formats"
