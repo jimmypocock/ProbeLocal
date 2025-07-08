@@ -1,0 +1,159 @@
+// Buttons Component
+
+// Base button styles
+.btn {
+  @include button-base;
+  
+  &.btn-primary {
+    background: $primary-color;
+    color: $text-inverse;
+    
+    &:hover {
+      background: $primary-dark;
+    }
+    
+    &:focus {
+      @include focus-ring($primary-color);
+    }
+  }
+  
+  &.btn-secondary {
+    background: $gray-200;
+    color: $text-primary;
+    
+    &:hover {
+      background: $gray-300;
+    }
+  }
+  
+  &.btn-success {
+    background: $success-color;
+    color: $text-inverse;
+    
+    &:hover {
+      background: shade($success-color, 10%);
+    }
+  }
+  
+  &.btn-danger {
+    background: $error-color;
+    color: $text-inverse;
+    
+    &:hover {
+      background: shade($error-color, 10%);
+    }
+  }
+  
+  &.btn-ghost {
+    background: transparent;
+    color: $primary-color;
+    border: 1px solid $primary-color;
+    
+    &:hover {
+      background: tint($primary-color, 90%);
+    }
+  }
+  
+  &.btn-sm {
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-sm;
+  }
+  
+  &.btn-lg {
+    padding: $spacing-md $spacing-xl;
+    font-size: $font-size-lg;
+  }
+  
+  &.btn-block {
+    width: 100%;
+  }
+  
+  &.btn-icon {
+    padding: $spacing-sm;
+    
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+// Streamlit button overrides
+.stButton {
+  > button {
+    @include button-base;
+    background: $primary-color;
+    color: $text-inverse;
+    width: 100%;
+    
+    &:hover {
+      background: $primary-dark;
+      transform: translateY(-1px);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+    
+    &:focus {
+      @include focus-ring;
+    }
+  }
+  
+  &.primary > button {
+    background: $primary-color;
+    
+    &:hover {
+      background: $primary-dark;
+    }
+  }
+  
+  &.secondary > button {
+    background: $gray-200;
+    color: $text-primary;
+    
+    &:hover {
+      background: $gray-300;
+    }
+  }
+}
+
+// Button group
+.btn-group {
+  display: flex;
+  gap: $spacing-sm;
+  
+  &.btn-group-vertical {
+    flex-direction: column;
+  }
+  
+  .btn {
+    flex: 1;
+  }
+}
+
+// Floating action button
+.fab {
+  position: fixed;
+  bottom: $spacing-lg;
+  right: $spacing-lg;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: $primary-color;
+  color: $text-inverse;
+  box-shadow: $shadow-lg;
+  @include flex-center;
+  cursor: pointer;
+  transition: all $transition-base;
+  
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: $shadow-xl;
+  }
+  
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+}

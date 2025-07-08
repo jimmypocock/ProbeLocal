@@ -1,0 +1,124 @@
+// Chat Interface Component
+
+// Chat messages
+[data-testid="stChatMessage"] {
+  border-radius: $radius-lg;
+  margin-bottom: $spacing-md;
+  animation: slideInUp $transition-base;
+}
+
+// Chat input
+.stChatInput {
+  margin-top: $spacing-lg;
+  
+  input {
+    border-radius: $radius-full;
+    padding: $spacing-sm $spacing-lg;
+    font-size: $font-size-base;
+  }
+}
+
+// Message bubbles
+.chat-message {
+  display: flex;
+  margin-bottom: $spacing-md;
+  animation: fadeIn $transition-base;
+  
+  &.user {
+    justify-content: flex-end;
+    
+    .message-content {
+      background: $primary-color;
+      color: $text-inverse;
+      border-bottom-right-radius: $radius-sm;
+    }
+  }
+  
+  &.assistant {
+    justify-content: flex-start;
+    
+    .message-content {
+      background: $gray-100;
+      color: $text-primary;
+      border-bottom-left-radius: $radius-sm;
+    }
+  }
+  
+  .message-content {
+    max-width: 70%;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius-lg;
+    
+    @include breakpoint('sm') {
+      max-width: 80%;
+    }
+  }
+}
+
+// Example questions
+.example-questions {
+  .stButton {
+    button {
+      @include button-base;
+      background: $gray-100;
+      color: $text-primary;
+      border: 1px solid $gray-300;
+      width: 100%;
+      justify-content: flex-start;
+      
+      &:hover {
+        background: $gray-200;
+        border-color: $primary-color;
+      }
+      
+      &::before {
+        content: "📝 ";
+        margin-right: $spacing-xs;
+      }
+    }
+  }
+}
+
+// Chat metadata
+.chat-metadata {
+  display: flex;
+  align-items: center;
+  margin-top: $spacing-xs;
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+  
+  .source-count {
+    display: flex;
+    align-items: center;
+    
+    span {
+      margin-right: $spacing-xs;
+    }
+  }
+  
+  .response-time {
+    margin-left: $spacing-sm;
+    
+    &::before {
+      content: "•";
+      margin: 0 $spacing-xs;
+    }
+  }
+}
+
+// Welcome message
+.welcome-message {
+  text-align: center;
+  padding: $spacing-2xl;
+  
+  h3 {
+    font-size: $font-size-3xl;
+    margin-bottom: $spacing-lg;
+  }
+  
+  .stInfo, .stSuccess {
+    text-align: left;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}

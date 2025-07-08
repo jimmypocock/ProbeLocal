@@ -1,0 +1,16 @@
+{
+  "name": "greg-ai-playground",
+  "version": "1.0.0",
+  "description": "SASS build system for Greg AI Playground",
+  "scripts": {
+    "sass": "sass static/scss/main.scss static/css/main.css --load-path=static/scss",
+    "sass:watch": "sass static/scss/main.scss static/css/main.css --load-path=static/scss --watch",
+    "sass:build": "sass static/scss/main.scss static/css/main.css --load-path=static/scss --style=compressed --no-source-map"
+  },
+  "devDependencies": {
+    "sass": "^1.77.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

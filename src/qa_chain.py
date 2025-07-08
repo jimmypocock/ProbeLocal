@@ -10,6 +10,8 @@ from langchain_community.llms import Ollama as LangchainOllama
 from src.config import Config
 from src.local_llm import OptimizedLLM
 from src.document_processor import DocumentProcessor
+from src.error_messages import ErrorMessages
+from src.performance.vector_store_cache import OptimizedVectorStore
 
 class QAChain:
     def __init__(self):
@@ -19,6 +21,7 @@ class QAChain:
         self.llm = self.llm_system.get_llm()
         self.prompt_template = self._create_prompt_template()
         self.model_config = self._load_model_config()
+        self.vector_store_optimizer = OptimizedVectorStore()
 
     def _load_model_config(self) -> Dict:
         """Load model-specific configuration"""
@@ -103,6 +106,9 @@ Answer:"""
         
         # Validate document exists first (this will raise ValueError if not found)
         vector_store = self.doc_processor.load_vector_store(document_id)
+        
+        # Optimize the vector store index for faster queries
+        vector_store = self.vector_store_optimizer.optimize_index(vector_store)
         
         # Use specified model or default
         if model_name and model_name != self.config.LOCAL_LLM_MODEL:
@@ -216,17 +222,16 @@ Answer:"""
             raise e
         except Exception as e:
             processing_time = time.time() - start_time
-            error_msg = str(e)
             
-            # Check for specific error types
-            if "422" in error_msg:
-                error_msg = f"Model {model_name} returned 422 error. This model may require different parameters. Run 'python test_models.py --models {model_name}' to test compatibility."
+            # Get specific error message
+            context = {'model_name': model_name}
+            specific_error = ErrorMessages.get_specific_error(e, context)
             
             return {
-                'answer': f"Error processing question: {error_msg}",
+                'answer': specific_error,
                 'sources': [],
                 'document_id': document_id,
                 'processing_time': processing_time,
                 'llm_model': model_name if model_name else self.config.LOCAL_LLM_MODEL,
-                'error': error_msg
+                'error': str(e)  # Keep original error for logging
             }

@@ -5,6 +5,22 @@
 echo "🍎 Starting PDF Q&A System..."
 echo "================================"
 
+# Function to cleanup on exit
+cleanup() {
+    echo -e "\n🧹 Cleaning up..."
+    if [ -n "$API_PID" ]; then
+        kill $API_PID 2>/dev/null
+    fi
+    if [ -n "$SASS_PID" ]; then
+        kill $SASS_PID 2>/dev/null
+    fi
+    echo "✅ Shutdown complete"
+    exit 0
+}
+
+# Set trap to cleanup on exit
+trap cleanup EXIT INT TERM
+
 # Check if Ollama is installed
 if ! command -v ollama &> /dev/null; then
     echo "❌ Ollama is not installed. Please install it using one of these methods:"
@@ -28,10 +44,28 @@ fi
 # Activate virtual environment
 source venv/bin/activate
 
+# Set offline mode for HuggingFace to prevent HTTP 429 errors
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+export HF_DATASETS_OFFLINE=1
+
 # Install dependencies if needed
 if ! python -c "import langchain" &> /dev/null; then
     echo "📦 Installing dependencies..."
     pip install -r requirements.txt
+fi
+
+# Build CSS if needed or start SASS watcher
+if [ -f "scripts/build_sass.py" ]; then
+    if [ ! -f "static/css/main.css" ]; then
+        echo "🎨 Building CSS from SASS..."
+        python scripts/build_sass.py
+    fi
+    
+    # Start SASS watcher in background
+    echo "👀 Starting SASS watcher..."
+    python scripts/build_sass.py --watch > sass-watch.log 2>&1 &
+    SASS_PID=$!
 fi
 
 # Start Ollama in background if not running
@@ -80,8 +114,3 @@ if [ -n "$STREAMLIT_PORT" ]; then
 else
     streamlit run app.py
 fi
-
-# Cleanup on exit
-echo "🧹 Cleaning up..."
-kill $API_PID 2>/dev/null
-echo "✅ Shutdown complete"

@@ -51,6 +51,11 @@ class OptimizedLLM:
 
         # Enable memory efficient attention
         os.environ["TRANSFORMERS_USE_ATTENTION_MASK"] = "1"
+        
+        # Prevent HuggingFace from making HTTP requests
+        os.environ["HF_HUB_OFFLINE"] = "1"
+        os.environ["TRANSFORMERS_OFFLINE"] = "1"
+        os.environ["HF_DATASETS_OFFLINE"] = "1"
 
     def _get_model_parameters(self, model_name: str) -> Dict:
         """Get model-specific parameters"""
@@ -145,17 +150,41 @@ class OptimizedLLM:
 
     def _initialize_embeddings(self):
         """Initialize local embeddings optimized for M3"""
-        # Use sentence-transformers with Apple Silicon optimization
-        return HuggingFaceEmbeddings(
-            model_name=self.config.EMBEDDING_MODEL,
-            model_kwargs={
-                'device': 'mps' if torch.backends.mps.is_available() else 'cpu'
-            },
-            encode_kwargs={
-                'normalize_embeddings': True,
-                'batch_size': self.config.BATCH_SIZE
-            }
-        )
+        # Suppress tokenization warnings
+        import warnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*clean_up_tokenization_spaces.*")
+            
+            # Use sentence-transformers with Apple Silicon optimization
+            # Set local_files_only in model_kwargs to prevent HTTP requests
+            try:
+                embeddings = HuggingFaceEmbeddings(
+                    model_name=self.config.EMBEDDING_MODEL,
+                    model_kwargs={
+                        'device': 'mps' if torch.backends.mps.is_available() else 'cpu',
+                        'trust_remote_code': False,  # Disable automatic model updates
+                        'local_files_only': True  # Force using local cache only
+                    },
+                    encode_kwargs={
+                        'normalize_embeddings': True,
+                        'batch_size': self.config.BATCH_SIZE
+                    }
+                )
+                return embeddings
+            except Exception as e:
+                # If local_files_only fails, try without it but with offline mode
+                print(f"Warning: Could not load embeddings with local_files_only: {e}")
+                return HuggingFaceEmbeddings(
+                    model_name=self.config.EMBEDDING_MODEL,
+                    model_kwargs={
+                        'device': 'mps' if torch.backends.mps.is_available() else 'cpu',
+                        'trust_remote_code': False
+                    },
+                    encode_kwargs={
+                        'normalize_embeddings': True,
+                        'batch_size': self.config.BATCH_SIZE
+                    }
+                )
 
     def get_llm(self):
         return self.llm

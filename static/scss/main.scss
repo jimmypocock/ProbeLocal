@@ -1,0 +1,36 @@
+// Main SCSS file for Greg AI Playground
+// This file imports all other SCSS partials
+
+// 1. Configuration and functions
+@import 'utils/variables';
+@import 'utils/mixins';
+@import 'utils/functions';
+
+// 2. Base styles
+@import 'base/reset';
+@import 'base/typography';
+@import 'base/animations';
+
+// 3. Layout
+@import 'layout/grid';
+@import 'layout/header';
+@import 'layout/sidebar';
+@import 'layout/main';
+
+// 4. Components
+@import 'components/buttons';
+@import 'components/file-uploader';
+@import 'components/chat-interface';
+@import 'components/notifications';
+@import 'components/toast';
+@import 'components/drag-drop';
+@import 'components/typing-indicator';
+@import 'components/status-indicators';
+@import 'components/modals';
+@import 'components/forms';
+
+// 5. Page-specific styles
+@import 'pages/app';
+
+// 6. Vendor overrides
+@import 'vendor/streamlit-overrides';

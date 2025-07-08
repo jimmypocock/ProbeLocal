@@ -1,0 +1,83 @@
+// Functions - Utility functions for SCSS
+
+// Convert px to rem
+@function rem($pixels, $base: 16) {
+  @return ($pixels / $base) * 1rem;
+}
+
+// Convert px to em
+@function em($pixels, $base: 16) {
+  @return ($pixels / $base) * 1em;
+}
+
+// Lighten a color
+@function tint($color, $percentage) {
+  @return mix(white, $color, $percentage);
+}
+
+// Darken a color
+@function shade($color, $percentage) {
+  @return mix(black, $color, $percentage);
+}
+
+// Get z-index value
+@function z($layer) {
+  @if $layer == 'dropdown' {
+    @return $z-index-dropdown;
+  } @else if $layer == 'sticky' {
+    @return $z-index-sticky;
+  } @else if $layer == 'fixed' {
+    @return $z-index-fixed;
+  } @else if $layer == 'modal-backdrop' {
+    @return $z-index-modal-backdrop;
+  } @else if $layer == 'modal' {
+    @return $z-index-modal;
+  } @else if $layer == 'popover' {
+    @return $z-index-popover;
+  } @else if $layer == 'tooltip' {
+    @return $z-index-tooltip;
+  } @else if $layer == 'toast' {
+    @return $z-index-toast;
+  }
+  @return 1;
+}
+
+// Strip unit from value
+@function strip-unit($value) {
+  @return $value / ($value * 0 + 1);
+}
+
+// Calculate contrast ratio
+@function contrast-ratio($color1, $color2) {
+  $luminance1: luminance($color1) + 0.05;
+  $luminance2: luminance($color2) + 0.05;
+  $ratio: $luminance1 / $luminance2;
+  
+  @if $luminance2 > $luminance1 {
+    $ratio: 1 / $ratio;
+  }
+  
+  @return $ratio;
+}
+
+// Calculate relative luminance
+@function luminance($color) {
+  $red: red($color) / 255;
+  $green: green($color) / 255;
+  $blue: blue($color) / 255;
+  
+  $red: if($red < 0.03928, $red / 12.92, pow(($red + 0.055) / 1.055, 2.4));
+  $green: if($green < 0.03928, $green / 12.92, pow(($green + 0.055) / 1.055, 2.4));
+  $blue: if($blue < 0.03928, $blue / 12.92, pow(($blue + 0.055) / 1.055, 2.4));
+  
+  @return 0.2126 * $red + 0.7152 * $green + 0.0722 * $blue;
+}
+
+// Choose contrasting text color (black or white)
+@function contrast-color($color) {
+  @if (contrast-ratio($color, #000) > contrast-ratio($color, #fff)) {
+    @return #000;
+  } @else {
+    @return #fff;
+  }
+}

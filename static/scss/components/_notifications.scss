@@ -1,0 +1,97 @@
+// Notifications Component
+
+// Alert notifications
+.stAlert {
+  animation: slideIn $transition-slow;
+  border-radius: $radius-md;
+  margin-bottom: $spacing-md;
+  
+  &[data-baseweb="notification"] {
+    &[kind="info"] {
+      @include status-indicator($info-color, $info-bg);
+    }
+    
+    &[kind="success"] {
+      @include status-indicator($success-color, $success-bg);
+    }
+    
+    &[kind="warning"] {
+      @include status-indicator($warning-color, $warning-bg);
+    }
+    
+    &[kind="error"] {
+      @include status-indicator($error-color, $error-bg);
+    }
+  }
+}
+
+// Custom notification styles
+.notification {
+  @include card($spacing-md);
+  margin-bottom: $spacing-md;
+  display: flex;
+  align-items: flex-start;
+  animation: slideInRight $transition-slow;
+  
+  .notification-icon {
+    font-size: $font-size-xl;
+    margin-right: $spacing-sm;
+    flex-shrink: 0;
+  }
+  
+  .notification-content {
+    flex: 1;
+    
+    .notification-title {
+      font-weight: $font-weight-semibold;
+      margin-bottom: $spacing-xs;
+    }
+    
+    .notification-message {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+    }
+  }
+  
+  .notification-close {
+    @include button-base;
+    padding: $spacing-xs;
+    color: $text-tertiary;
+    
+    &:hover {
+      color: $text-primary;
+    }
+  }
+  
+  &.notification-success {
+    border-left: 4px solid $success-color;
+    
+    .notification-icon {
+      color: $success-color;
+    }
+  }
+  
+  &.notification-error {
+    border-left: 4px solid $error-color;
+    
+    .notification-icon {
+      color: $error-color;
+    }
+  }
+  
+  &.notification-warning {
+    border-left: 4px solid $warning-color;
+    
+    .notification-icon {
+      color: $warning-color;
+    }
+  }
+  
+  &.notification-info {
+    border-left: 4px solid $info-color;
+    
+    .notification-icon {
+      color: $info-color;
+    }
+  }
+}

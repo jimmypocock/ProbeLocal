@@ -15,10 +15,11 @@ from typing import Dict, List, Optional, Tuple
 import subprocess
 from pathlib import Path
 
-# Add src to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+# Add project root to path for imports
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
-from config import Config
+from src.config import Config
 from langchain_community.llms import Ollama
 import ollama as ollama_module
 

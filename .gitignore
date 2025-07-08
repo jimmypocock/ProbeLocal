@@ -43,6 +43,11 @@ tmp/
 tests/screenshots/
 tests/results/
 .streamlit/
+*.json
+!package.json
+!src/model_config.json
+!tests/test_config.json
+!pytest.ini
 
 # Backup and temporary scripts
 app_backup.py
@@ -56,3 +61,22 @@ check_port.py
 
 # Cleanup script (one-time use)
 cleanup_before_push.py
+
+# Node modules (for SASS)
+node_modules/
+package-lock.json
+
+# Generated CSS (built from SASS)
+static/css/
+*.css.map
+
+# Session state and runtime files
+session_state/
+processing_state/
+cache/
+
+# One-off and test scripts at root
+download_embeddings.py
+performance_test.py
+test_offline_embeddings.py
+run_tests_simple.sh

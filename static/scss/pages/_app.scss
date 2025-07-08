@@ -1,0 +1,194 @@
+// App-specific page styles
+
+// Welcome screen
+.welcome-screen {
+  @include flex-center;
+  min-height: 60vh;
+  text-align: center;
+  
+  .welcome-content {
+    max-width: 600px;
+    
+    .welcome-icon {
+      font-size: rem(80);
+      margin-bottom: $spacing-lg;
+      animation: bounce 2s infinite;
+    }
+    
+    h1 {
+      margin-bottom: $spacing-md;
+    }
+    
+    .welcome-subtitle {
+      font-size: $font-size-lg;
+      color: $text-secondary;
+      margin-bottom: $spacing-xl;
+    }
+    
+    .welcome-features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: $spacing-lg;
+      margin-bottom: $spacing-xl;
+      text-align: left;
+      
+      .feature-item {
+        @include card($spacing-md);
+        
+        .feature-icon {
+          font-size: $font-size-2xl;
+          margin-bottom: $spacing-sm;
+        }
+        
+        .feature-title {
+          font-weight: $font-weight-semibold;
+          margin-bottom: $spacing-xs;
+        }
+        
+        .feature-description {
+          font-size: $font-size-sm;
+          color: $text-secondary;
+        }
+      }
+    }
+  }
+}
+
+// Document status widget
+.document-status-widget {
+  @include card($spacing-md);
+  background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
+  color: $text-inverse;
+  margin-bottom: $spacing-lg;
+  
+  .status-icon {
+    font-size: $font-size-2xl;
+    margin-bottom: $spacing-sm;
+  }
+  
+  .status-title {
+    font-size: $font-size-sm;
+    opacity: 0.9;
+    margin-bottom: $spacing-xs;
+  }
+  
+  .status-value {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+  }
+  
+  .status-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: $spacing-sm;
+    font-size: $font-size-sm;
+    opacity: 0.8;
+  }
+}
+
+// Model selector widget
+.model-selector-widget {
+  .model-info {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-top: $spacing-sm;
+    padding: $spacing-sm;
+    background: $gray-100;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+    
+    .model-status {
+      display: flex;
+      align-items: center;
+      gap: $spacing-xs;
+      
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: $success-color;
+      }
+    }
+    
+    .model-stats {
+      margin-left: auto;
+      color: $text-tertiary;
+    }
+  }
+}
+
+// URL input section
+.url-input-section {
+  .url-examples {
+    margin-top: $spacing-md;
+    
+    .examples-title {
+      font-size: $font-size-sm;
+      color: $text-secondary;
+      margin-bottom: $spacing-sm;
+    }
+    
+    .example-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $spacing-xs;
+      
+      .example-pill {
+        @include button-base;
+        padding: $spacing-xs $spacing-sm;
+        background: $gray-100;
+        border: 1px solid $gray-300;
+        border-radius: $radius-full;
+        font-size: $font-size-sm;
+        
+        &:hover {
+          background: $gray-200;
+          border-color: $primary-color;
+        }
+      }
+    }
+  }
+}
+
+// Advanced settings
+.advanced-settings {
+  margin-top: $spacing-lg;
+  
+  .settings-expander {
+    @include button-base;
+    width: 100%;
+    justify-content: space-between;
+    padding: $spacing-md;
+    background: $gray-100;
+    border-radius: $radius-md;
+    
+    &:hover {
+      background: $gray-200;
+    }
+    
+    .expander-icon {
+      transition: transform $transition-fast;
+      
+      &.expanded {
+        transform: rotate(180deg);
+      }
+    }
+  }
+  
+  .settings-content {
+    margin-top: $spacing-md;
+    padding: $spacing-lg;
+    background: $bg-primary;
+    border: 1px solid $gray-200;
+    border-radius: $radius-md;
+    
+    .setting-group {
+      margin-bottom: $spacing-lg;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}

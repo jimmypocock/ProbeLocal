@@ -539,94 +539,89 @@ This local solution excels at privacy, cost (free), and specific information ext
 | Complex Q&A | 5-7s       | 3-4s     | 40% faster |
 | Memory Used | 5-6GB      | 2-3GB    | 50% less   |
 
-## Testing Your Models
+## Testing
 
-Greg includes comprehensive testing capabilities to evaluate how well different Ollama models work with various file formats.
-
-### Comprehensive Testing
-
-Run the full test suite (all formats + models + unit tests):
-
+### Quick Start
 ```bash
-make test
+# Run all tests (excluding model tests)
+make test-app
+
+# Run only fast tests (skip slow image processing)
+make test-fast
+
+# Run specific test suites
+make test-unit        # Unit tests only
+make test-integration # Integration tests
+make test-ui         # UI tests (Selenium)
+
+# Test with coverage report
+make test-coverage
 ```
 
-This tests all file formats across all available models and runs unit tests.
-
-### Quick Testing
-
-Fast smoke test of all file formats:
-
+### Testing Models
 ```bash
-make test-quick
-```
-
-### Targeted Testing
-
-Test specific models or run only unit tests:
-
-```bash
-# Test specific models
+# Test specific models with various file formats
 make test-models MODELS="mistral,llama3,deepseek"
 
-# Run unit tests only  
-make test-unit
-
-# Test specific formats via Python
-python tests/test_multiformat_models.py --formats "excel,images"
+# Quick model compatibility test
+make test-models-quick
 ```
 
-### File Formats Tested
+### Test Structure
+- **Unit Tests**: Fast, isolated tests for individual components
+- **Integration Tests**: API endpoint and service interaction tests
+- **UI Tests**: Selenium-based browser automation tests
+- **Model Tests**: Comprehensive testing of different Ollama models
 
-| Format | Files | Test Content |
-|--------|-------|--------------|
-| **Excel (.xlsx)** | Invoice + Story | Multi-sheet data, calculations, cross-references |
-| **Markdown (.md)** | Invoice + Story | Tables, headers, formatting preservation |
-| **Word (.docx)** | Invoice + Story | Complex documents with formatting |
-| **Images (.png/.jpg)** | Invoice + Story + Content | OCR text extraction, visual analysis |
+### Important Notes
+1. **Services must be running**: Start with `make run` before testing
+2. **Selenium tests**: Require Chrome/Chromium browser
+3. **Model tests**: Require Ollama models to be downloaded
+4. **Test data**: Located in `tests/fixtures/`
 
-### What Each Test Reveals
+## Development & Styling
 
-**Model Performance Metrics:**
-- **Success Rate**: % of questions answered without errors
-- **Accuracy Rate**: % of answers containing expected content  
-- **Response Time**: Average speed per format
-- **Error Analysis**: 422 errors, timeouts, compatibility issues
-
-**Format-Specific Insights:**
-- Which models handle Excel calculations best
-- OCR accuracy across different models
-- Markdown table parsing performance
-- Word document structure handling
-
-### Example Test Results
+### CSS/SASS Build System
+Greg uses a SASS-based styling system for maintainable, modular CSS:
 
 ```bash
-# Quick test all formats
-make test-formats-quick
-# Output: ✅ Excel, ✅ Markdown, ✅ Word, ✅ Images
+# Build CSS once
+make sass
 
-# Test mistral vs deepseek with Excel files
-python tests/test_multiformat_models.py --models "mistral,deepseek" --formats excel
-# Output: Detailed comparison of accuracy and speed
+# Watch for changes during development
+make sass-watch  # (automatically runs with make run)
+
+# Production build (compressed)
+make sass-compressed
 ```
 
+### Working with Styles
+- **SASS Source**: `static/scss/` - All source SASS files
+- **Compiled CSS**: `static/css/` - Auto-generated, gitignored
+- **Component styles**: Each UI component has its own SCSS file
+- **Design system**: Variables, mixins, and utilities for consistency
 
-### Results Analysis
+### Never use inline styles in Python - Use CSS classes instead:
+```python
+# Good ✅
+st.markdown('<div class="chat-message">Hello</div>', unsafe_allow_html=True)
 
-All tests save JSON results to `tests/results/` showing:
-- Model comparison across formats
-- Response time analysis
-- Accuracy breakdowns by question type
-- Error patterns and compatibility issues
+# Bad ❌
+st.markdown('<div style="color: red;">Hello</div>', unsafe_allow_html=True)
+```
 
-### Best Practices
+### Offline Mode Configuration
+For completely offline operation without HuggingFace requests:
 
-1. **Start with quick test** (`make test-quick`) to verify setup
-2. **Run full suite** (`make test`) to compare all models
-3. **Check services** are running before testing (`make run`)
-4. **Monitor resources** during comprehensive testing
-5. **Use targeted tests** (`make test-models MODELS=...`) for specific comparisons
+```bash
+# Environment variables (automatically set)
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+export HF_DATASETS_OFFLINE=1
+
+# Pre-download embedding models
+make download-embeddings
+```
 
 ## Next Steps
 

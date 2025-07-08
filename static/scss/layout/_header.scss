@@ -1,0 +1,80 @@
+// Header Layout
+
+.app-header {
+  background: $bg-primary;
+  border-bottom: 1px solid $gray-200;
+  padding: $spacing-md 0;
+  position: sticky;
+  top: 0;
+  z-index: z('sticky');
+  box-shadow: $shadow-sm;
+  
+  .header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-lg;
+    
+    @include breakpoint('md') {
+      gap: $spacing-xl;
+    }
+  }
+  
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    
+    h1 {
+      font-size: $font-size-2xl;
+      margin: 0;
+      
+      @include breakpoint('md') {
+        font-size: $font-size-3xl;
+      }
+    }
+    
+    .title-icon {
+      font-size: $font-size-3xl;
+    }
+    
+    .title-caption {
+      display: none;
+      font-size: $font-size-sm;
+      color: $text-secondary;
+      margin-left: $spacing-sm;
+      
+      @include breakpoint('lg') {
+        display: block;
+      }
+    }
+  }
+  
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    
+    .status-indicators {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+    }
+    
+    .help-button {
+      @include button-base;
+      padding: $spacing-xs;
+      font-size: $font-size-xl;
+    }
+  }
+}
+
+// Streamlit header customization
+.stApp > header {
+  background: transparent;
+  
+  // Hide default Streamlit header elements if needed
+  &[data-testid="stHeader"] {
+    display: none;
+  }
+}

@@ -7,6 +7,7 @@ import os
 import sys
 import pytest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -16,7 +17,10 @@ from src.config import Config
 
 def test_all_supported_file_types():
     """Test that all advertised file types are actually supported"""
-    processor = DocumentProcessor()
+    # Mock the LLM system to avoid needing Ollama
+    with patch('src.document_processor.OptimizedLLM') as mock_llm:
+        mock_llm.return_value.get_embeddings.return_value = Mock()
+        processor = DocumentProcessor()
     
     # These should all be supported
     supported_files = [
@@ -66,7 +70,10 @@ def test_all_supported_file_types():
 
 def test_file_type_case_insensitive():
     """Test that file type detection is case insensitive"""
-    processor = DocumentProcessor()
+    # Mock the LLM system to avoid needing Ollama
+    with patch('src.document_processor.OptimizedLLM') as mock_llm:
+        mock_llm.return_value.get_embeddings.return_value = Mock()
+        processor = DocumentProcessor()
     
     test_cases = [
         ("TEST.PDF", "pdf"),
@@ -84,7 +91,11 @@ def test_file_type_case_insensitive():
 
 if __name__ == "__main__":
     print("Testing all supported file types...")
-    test_all_supported_file_types()
+    with patch('src.document_processor.OptimizedLLM') as mock_llm:
+        mock_llm.return_value.get_embeddings.return_value = Mock()
+        test_all_supported_file_types()
     print("\nTesting case insensitivity...")
-    test_file_type_case_insensitive()
+    with patch('src.document_processor.OptimizedLLM') as mock_llm:
+        mock_llm.return_value.get_embeddings.return_value = Mock()
+        test_file_type_case_insensitive()
     print("\n✅ All file type tests passed!")

@@ -3,6 +3,7 @@ import hashlib
 from pathlib import Path
 from typing import List, Tuple, Dict
 import pickle
+import json
 import time
 from datetime import datetime
 import csv
@@ -20,6 +21,8 @@ import numpy as np
 
 from src.config import Config
 from src.local_llm import OptimizedLLM
+from src.incremental_processor import IncrementalProcessor
+from src.security import validate_vector_store_path
 
 class DocumentProcessor:
     def __init__(self):
@@ -39,6 +42,12 @@ class DocumentProcessor:
             length_function=len,
             separators=["\n\n", "\n", " ", ""]
         )
+        
+        # Initialize incremental processor for large files
+        self.incremental_processor = IncrementalProcessor()
+        
+        # File size threshold for incremental processing (10MB)
+        self.LARGE_FILE_THRESHOLD = 10 * 1024 * 1024
         
         # File type mappings
         self.file_loaders = {
@@ -338,10 +347,9 @@ class DocumentProcessor:
         
         try:
             # Load and process the image
-            image = Image.open(file_path)
-            
-            # Extract text using OCR
-            extracted_text = pytesseract.image_to_string(image)
+            with Image.open(file_path) as image:
+                # Extract text using OCR
+                extracted_text = pytesseract.image_to_string(image)
             
             # Clean up the extracted text
             lines = []
@@ -401,10 +409,24 @@ class DocumentProcessor:
             file_hash = hashlib.sha256(f.read()).hexdigest()
         return file_hash[:16]
 
-    def process_file(self, file_path: str, filename: str, chunk_size: int = None) -> Tuple[str, int, int, float]:
+    def process_file(self, file_path: str, filename: str, chunk_size: int = None, progress_callback: callable = None) -> Tuple[str, int, int, float]:
         """Process any supported file type with optional dynamic chunk size"""
         start_time = time.time()
         
+        # Check file size for incremental processing
+        file_size = os.path.getsize(file_path)
+        
+        # Use incremental processing for large files
+        if file_size > self.LARGE_FILE_THRESHOLD:
+            print(f"Large file detected ({file_size / 1024 / 1024:.1f} MB), using incremental processing...")
+            return self.incremental_processor.process_file_incremental(
+                file_path=file_path,
+                file_name=filename,
+                chunk_size=chunk_size,
+                progress_callback=progress_callback
+            )
+        
+        # Regular processing for smaller files
         # Detect file type
         file_type = self.detect_file_type(filename)
         
@@ -496,8 +518,11 @@ class DocumentProcessor:
         }
 
         metadata_path = self.config.VECTOR_STORE_DIR / f"{doc_id}.metadata"
-        with open(metadata_path, 'wb') as f:
-            pickle.dump(metadata, f)
+        # Convert datetime to string for JSON serialization
+        metadata_json = metadata.copy()
+        metadata_json['upload_date'] = metadata_json['upload_date'].isoformat()
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata_json, f)
 
         print(f"Processing complete in {processing_time:.1f} seconds")
         
@@ -516,10 +541,16 @@ class DocumentProcessor:
         if not vector_store_path.exists():
             raise ValueError(f"Document {document_id} not found")
 
+        # Validate the vector store path for security
+        if not validate_vector_store_path(vector_store_path, self.config.VECTOR_STORE_DIR):
+            raise ValueError(f"Invalid vector store path for document ID: {document_id}")
+
+        # Load with safer approach - still uses pickle internally but with validation
+        # In production, consider migrating to a safer serialization format
         return FAISS.load_local(
             str(vector_store_path),
             self.embeddings,
-            allow_dangerous_deserialization=True
+            allow_dangerous_deserialization=True  # Required by FAISS, but path is validated
         )
     
     def _cleanup_old_documents(self):

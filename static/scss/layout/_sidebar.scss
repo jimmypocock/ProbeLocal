@@ -1,0 +1,149 @@
+// Sidebar Layout
+
+.sidebar {
+  background: $bg-primary;
+  border-right: 1px solid $gray-200;
+  height: 100vh;
+  overflow-y: auto;
+  @include smooth-scroll;
+  
+  @include breakpoint('lg') {
+    width: 300px;
+  }
+  
+  .sidebar-header {
+    padding: $spacing-lg;
+    border-bottom: 1px solid $gray-200;
+    
+    h2 {
+      font-size: $font-size-xl;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+    }
+  }
+  
+  .sidebar-section {
+    padding: $spacing-lg;
+    border-bottom: 1px solid $gray-100;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    h3 {
+      font-size: $font-size-lg;
+      margin-bottom: $spacing-md;
+      color: $text-secondary;
+    }
+  }
+  
+  .sidebar-footer {
+    padding: $spacing-lg;
+    border-top: 1px solid $gray-200;
+    margin-top: auto;
+  }
+}
+
+// Streamlit sidebar customization
+section[data-testid="stSidebar"] {
+  background: $bg-primary;
+  
+  > div:first-child {
+    padding: $spacing-lg;
+    
+    @include breakpoint('lg') {
+      padding: $spacing-xl;
+    }
+  }
+  
+  // Sidebar toggle button
+  button[kind="header"] {
+    color: $text-primary;
+    
+    &:hover {
+      background: $gray-100;
+    }
+  }
+  
+  // Document list in sidebar
+  .document-list {
+    max-height: 400px;
+    overflow-y: auto;
+    @include smooth-scroll;
+    margin: $spacing-md 0;
+    
+    .document-item {
+      @include card($spacing-sm);
+      margin-bottom: $spacing-sm;
+      cursor: pointer;
+      transition: all $transition-fast;
+      
+      &:hover {
+        transform: translateX(4px);
+        box-shadow: $shadow-lg;
+      }
+      
+      &.active {
+        border-left: 4px solid $primary-color;
+        background: tint($primary-color, 95%);
+      }
+      
+      .document-name {
+        font-weight: $font-weight-medium;
+        @include text-truncate;
+      }
+      
+      .document-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-top: $spacing-xs;
+        font-size: $font-size-sm;
+        color: $text-tertiary;
+      }
+    }
+  }
+  
+  // Search input in sidebar
+  .document-search {
+    margin-bottom: $spacing-md;
+    
+    input {
+      width: 100%;
+      padding-left: $spacing-xl;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z' stroke='%236B7280' stroke-width='2'/%3E%3Cpath d='M19 19L15 15' stroke='%236B7280' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-position: left $spacing-sm center;
+      background-repeat: no-repeat;
+      background-size: 20px;
+    }
+  }
+}
+
+// Collapsible sidebar sections
+.sidebar-collapsible {
+  .collapse-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    padding: $spacing-sm 0;
+    
+    &:hover {
+      color: $primary-color;
+    }
+    
+    .collapse-icon {
+      transition: transform $transition-fast;
+      
+      &.collapsed {
+        transform: rotate(-90deg);
+      }
+    }
+  }
+  
+  .collapse-content {
+    margin-top: $spacing-sm;
+    animation: slideInDown $transition-base;
+  }
+}

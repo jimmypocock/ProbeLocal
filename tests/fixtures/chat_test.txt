@@ -1,1 +1,11 @@
-The capital of France is Paris. Python is a programming language.
+
+        Test Document for Chat Interface
+        
+        This document contains information about artificial intelligence,
+        machine learning, and natural language processing.
+        
+        Key topics:
+        - AI fundamentals
+        - Machine learning algorithms
+        - NLP applications
+        

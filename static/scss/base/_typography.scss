@@ -1,0 +1,164 @@
+// Typography - Text styles and utilities
+
+// Headings
+h1, h2, h3, h4, h5, h6 {
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+  color: $text-primary;
+}
+
+h1 {
+  font-size: $font-size-4xl;
+  margin-bottom: $spacing-lg;
+}
+
+h2 {
+  font-size: $font-size-3xl;
+  margin-bottom: $spacing-md;
+}
+
+h3 {
+  font-size: $font-size-2xl;
+  margin-bottom: $spacing-md;
+}
+
+h4 {
+  font-size: $font-size-xl;
+  margin-bottom: $spacing-sm;
+}
+
+h5 {
+  font-size: $font-size-lg;
+  margin-bottom: $spacing-sm;
+}
+
+h6 {
+  font-size: $font-size-base;
+  margin-bottom: $spacing-sm;
+}
+
+// Paragraphs
+p {
+  margin-bottom: $spacing-md;
+  line-height: $line-height-relaxed;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// Links
+a {
+  color: $primary-color;
+  text-decoration: none;
+  transition: color $transition-fast;
+  
+  &:hover {
+    color: $primary-dark;
+    text-decoration: underline;
+  }
+  
+  &:focus {
+    @include focus-ring;
+  }
+}
+
+// Lists
+ul, ol {
+  margin-bottom: $spacing-md;
+  padding-left: $spacing-lg;
+}
+
+ul {
+  list-style-type: disc;
+}
+
+ol {
+  list-style-type: decimal;
+}
+
+li {
+  margin-bottom: $spacing-xs;
+}
+
+// Code
+code {
+  padding: rem(2) rem(4);
+  font-size: $font-size-sm;
+  background-color: $gray-100;
+  border-radius: $radius-sm;
+  color: $text-primary;
+}
+
+pre {
+  padding: $spacing-md;
+  overflow-x: auto;
+  background-color: $gray-900;
+  color: $gray-100;
+  border-radius: $radius-md;
+  margin-bottom: $spacing-md;
+  
+  code {
+    padding: 0;
+    background-color: transparent;
+    color: inherit;
+  }
+}
+
+// Blockquotes
+blockquote {
+  padding-left: $spacing-lg;
+  margin-bottom: $spacing-md;
+  border-left: 4px solid $primary-color;
+  font-style: italic;
+  color: $text-secondary;
+}
+
+// Horizontal rules
+hr {
+  border: 0;
+  height: 1px;
+  background-color: $gray-300;
+  margin: $spacing-xl 0;
+}
+
+// Text utilities
+.text-xs { font-size: $font-size-xs; }
+.text-sm { font-size: $font-size-sm; }
+.text-base { font-size: $font-size-base; }
+.text-lg { font-size: $font-size-lg; }
+.text-xl { font-size: $font-size-xl; }
+.text-2xl { font-size: $font-size-2xl; }
+.text-3xl { font-size: $font-size-3xl; }
+.text-4xl { font-size: $font-size-4xl; }
+
+.font-light { font-weight: $font-weight-light; }
+.font-normal { font-weight: $font-weight-normal; }
+.font-medium { font-weight: $font-weight-medium; }
+.font-semibold { font-weight: $font-weight-semibold; }
+.font-bold { font-weight: $font-weight-bold; }
+
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-justify { text-align: justify; }
+
+.text-primary { color: $text-primary; }
+.text-secondary { color: $text-secondary; }
+.text-tertiary { color: $text-tertiary; }
+.text-success { color: $success-color; }
+.text-error { color: $error-color; }
+.text-warning { color: $warning-color; }
+.text-info { color: $info-color; }
+
+.truncate {
+  @include text-truncate;
+}
+
+.line-clamp-2 {
+  @include line-clamp(2);
+}
+
+.line-clamp-3 {
+  @include line-clamp(3);
+}

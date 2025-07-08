@@ -1,0 +1,14 @@
+
+        Greg AI Playground Test Document
+        
+        This is a test document for the Greg AI Playground.
+        It contains information about AI, machine learning, and natural language processing.
+        
+        Key Features:
+        - Document processing
+        - Question answering
+        - Multiple AI models
+        - Real-time chat interface
+        
+        The system uses RAG (Retrieval Augmented Generation) to provide accurate answers.
+        
