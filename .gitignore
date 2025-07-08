@@ -80,3 +80,6 @@ download_embeddings.py
 performance_test.py
 test_offline_embeddings.py
 run_tests_simple.sh
+
+# CI/CD not suitable for local-only app
+.github/
