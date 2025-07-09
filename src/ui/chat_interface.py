@@ -36,7 +36,9 @@ def render_example_questions() -> None:
         cols = st.columns(2)
         for i, question in enumerate(example_questions):
             with cols[i % 2]:
-                if st.button(f"📝 {question}", key=f"example_{i}", use_container_width=True):
+                # Make keys unique by including document ID and timestamp
+                unique_key = f"example_{st.session_state.current_document_id}_{i}"
+                if st.button(f"📝 {question}", key=unique_key, use_container_width=True):
                     # Handle example question without rerun
                     st.session_state.messages.append({"role": "user", "content": question})
                     # Trigger a question submission
@@ -300,7 +302,7 @@ def render_welcome_message() -> None:
         
         # Allow web-only chat
         st.session_state.current_document_id = "web_only"
-        render_example_questions()
+        # Don't render example questions here - it's done in app.py
     else:
         st.info("""
         **Getting Started:**

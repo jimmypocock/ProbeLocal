@@ -63,6 +63,8 @@ streaming_qa_chain = None
 vector_store_manager = None
 
 class QuestionRequest(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    
     question: str
     document_id: str
     max_results: int = 5
@@ -72,6 +74,8 @@ class QuestionRequest(BaseModel):
     stream: bool = False  # Enable streaming response
 
 class URLProcessRequest(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    
     url: str
     model: str = "mistral"
     chunk_size: int = 800
@@ -404,7 +408,7 @@ async def upload_file_streaming(
         )
     
     try:
-        from src.streaming_upload import StreamingUploadHandler
+        from src.streaming.upload import StreamingUploadHandler
         
         handler = StreamingUploadHandler(config)
         
@@ -495,7 +499,7 @@ async def process_url(request: Request, url_request: URLProcessRequest):
             processor = get_doc_processor()
             doc_id, pages, chunks, processing_time = processor.process_file(
                 str(safe_path),
-                title,
+                safe_filename,  # Use the actual filename with .txt extension
                 chunk_size=url_request.chunk_size
             )
             
@@ -726,7 +730,7 @@ async def ask_question_streaming(request: Request, question_request: QuestionReq
     max_results = params.get('max_results', 3)
     
     try:
-        from src.streaming_response import StreamingResponseHandler
+        from src.streaming.response import StreamingResponseHandler
         
         # Get streaming QA chain
         chain = get_streaming_qa_chain()

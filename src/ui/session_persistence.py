@@ -14,7 +14,7 @@ class SessionPersistence:
     """Handles session state persistence across reruns"""
     
     def __init__(self):
-        self.session_dir = Path("session_state")
+        self.session_dir = Path("cache/sessions")
         self.session_dir.mkdir(exist_ok=True)
         self.session_file = self.session_dir / "current_session.json"
         

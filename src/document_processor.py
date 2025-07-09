@@ -462,6 +462,23 @@ class DocumentProcessor:
             print(f"Splitting into chunks (default size: {self.config.CHUNK_SIZE})...")
             chunks = self.text_splitter.split_documents(documents)
 
+        # Handle empty files - create a minimal document if no chunks exist
+        if not chunks:
+            print("Warning: Empty file detected, creating minimal document")
+            empty_doc = Document(
+                page_content=f"Empty {file_type.upper()} file: {filename}",
+                metadata={
+                    'document_id': doc_id,
+                    'filename': filename,
+                    'file_type': file_type,
+                    'chunk_index': 0,
+                    'total_chunks': 1,
+                    'page': 0,
+                    'is_empty': True
+                }
+            )
+            chunks = [empty_doc]
+
         # Add metadata
         for i, chunk in enumerate(chunks):
             chunk.metadata.update({

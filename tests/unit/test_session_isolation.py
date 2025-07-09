@@ -11,7 +11,35 @@ import hashlib
 import uuid
 from pathlib import Path
 from src.ui.session_manager import IsolatedSessionManager, session_manager
-import streamlit as st
+try:
+    import streamlit as st
+except ImportError:
+    # Create a mock Streamlit module for testing
+    class MockStreamlit:
+        class session_state:
+            data = {}
+            
+            @classmethod
+            def __getitem__(cls, key):
+                return cls.data[key]
+            
+            @classmethod
+            def __setitem__(cls, key, value):
+                cls.data[key] = value
+            
+            @classmethod
+            def __contains__(cls, key):
+                return key in cls.data
+            
+            @classmethod
+            def get(cls, key, default=None):
+                return cls.data.get(key, default)
+            
+            @classmethod
+            def clear(cls):
+                cls.data.clear()
+    
+    st = MockStreamlit()
 
 def test_session_isolation():
     """Test that different sessions are isolated"""
@@ -115,31 +143,15 @@ def test_session_isolation():
 
 import pytest
 
-@pytest.mark.skip(reason="Requires actual Streamlit environment")
 def test_session_persistence():
     """Test session state persistence and restoration"""
     print("\nTesting session persistence...")
     
-    # Mock Streamlit session state
-    class MockSessionState:
-        def __init__(self):
-            self.data = {}
-        
-        def __getitem__(self, key):
-            return self.data[key]
-        
-        def __setitem__(self, key, value):
-            self.data[key] = value
-        
-        def __contains__(self, key):
-            return key in self.data
-        
-        def get(self, key, default=None):
-            return self.data.get(key, default)
-    
-    # Replace st.session_state temporarily
-    original_session_state = st.session_state if hasattr(st, 'session_state') else None
-    st.session_state = MockSessionState()
+    # Clear any existing session state
+    if hasattr(st.session_state, 'clear'):
+        st.session_state.clear()
+    elif hasattr(st.session_state, 'data'):
+        st.session_state.data.clear()
     
     try:
         # Create a test session ID
@@ -158,7 +170,10 @@ def test_session_persistence():
         session_manager.save_state()
         
         # Clear session state
-        st.session_state = MockSessionState()
+        if hasattr(st.session_state, 'clear'):
+            st.session_state.clear()
+        elif hasattr(st.session_state, 'data'):
+            st.session_state.data.clear()
         st.session_state['session_id'] = 'test_session_123'
         
         # Load state
@@ -178,11 +193,13 @@ def test_session_persistence():
             session_file.unlink()
         
     finally:
-        # Restore original session state
-        if original_session_state is not None:
-            st.session_state = original_session_state
+        # Clean up session state
+        if hasattr(st.session_state, 'clear'):
+            st.session_state.clear()
+        elif hasattr(st.session_state, 'data'):
+            st.session_state.data.clear()
 
 if __name__ == "__main__":
     test_session_isolation()
-    # test_session_persistence() # Skip this - requires actual Streamlit environment
+    test_session_persistence()
     print("\n✅ All tests passed!")

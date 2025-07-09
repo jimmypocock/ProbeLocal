@@ -147,7 +147,11 @@ Answer:"""
         results[model_name] = model_results
     
     # Save results
-    with open("deepseek_pdf_test_results.json", "w") as f:
+    results_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results")
+    os.makedirs(results_dir, exist_ok=True)
+    results_file = os.path.join(results_dir, "deepseek_pdf_test_results.json")
+    
+    with open(results_file, "w") as f:
         json.dump(results, f, indent=2)
     
     print(f"\n{'='*60}")
@@ -164,7 +168,7 @@ Answer:"""
             if not result['success'] and "422" in str(result['error']):
                 print(f"  ⚠️  422 error with {result['params']} parameters")
     
-    print("\nResults saved to deepseek_pdf_test_results.json")
+    print(f"\nResults saved to {results_file}")
 
 def check_installed_models():
     """Check which deepseek models are installed"""

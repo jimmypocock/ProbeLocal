@@ -9,7 +9,7 @@ from langchain.chains import RetrievalQA
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 from src.qa_chain_enhanced import EnhancedQAChain
-from src.streaming_handler import StreamingResponseHandler, AsyncStreamingResponseHandler
+from src.streaming.handler import StreamingResponseHandler, AsyncStreamingResponseHandler
 
 
 class StreamingQAChain(EnhancedQAChain):

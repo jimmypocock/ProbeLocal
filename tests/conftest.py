@@ -161,3 +161,37 @@ def pytest_collection_modifyitems(config, items):
         # Mark slow tests
         if "image" in item.name or "story" in item.name or "invoice" in item.name:
             item.add_marker(pytest.mark.slow)
+
+
+@pytest.fixture(autouse=True, scope="function")
+def add_test_spacing(request):
+    """Add spacing between tests to avoid rate limiting issues"""
+    # Only add spacing for integration tests that interact with API
+    if hasattr(request.node, 'get_closest_marker'):
+        if request.node.get_closest_marker('integration'):
+            yield
+            # Add delay after integration tests to avoid rate limiting
+            time.sleep(2)
+        else:
+            yield
+    else:
+        yield
+
+
+def handle_rate_limit_response(response, operation_name="operation", max_wait=60):
+    """Helper function to handle rate limit responses
+    
+    Args:
+        response: The HTTP response object
+        operation_name: Name of the operation for logging
+        max_wait: Maximum time to wait for rate limit
+        
+    Returns:
+        True if rate limit was hit and handled, False otherwise
+    """
+    if response.status_code == 429:
+        retry_after = min(int(response.headers.get('Retry-After', 60)), max_wait)
+        print(f"\nRate limit hit for {operation_name}, waiting {retry_after} seconds...")
+        time.sleep(retry_after + 1)  # Add 1 second buffer
+        return True
+    return False

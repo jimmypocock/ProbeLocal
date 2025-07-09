@@ -10,7 +10,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.streaming_handler import StreamingResponseHandler, create_streaming_response
+from src.streaming.handler import StreamingResponseHandler, create_streaming_response
 from src.qa_chain_streaming import StreamingQAChain
 
 

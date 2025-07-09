@@ -38,39 +38,66 @@ make run
 
 ## Testing the Application
 
-### Complete Test Suite
+### Testing Strategy
+Greg uses a streamlined testing approach focused on reliability and speed:
+
+1. **Unit Tests** - Fast tests including security validations
+2. **Native Streamlit Tests** - Logic tests using AppTest framework
+3. **API Tests** - Comprehensive backend coverage
+4. **Integration Tests** - Service interaction tests
+5. **Performance Tests** - Optimization and caching tests
+
+### Quick Test Commands
 ```bash
-# Run ALL tests (comprehensive)
+# Run all tests (recommended)
 make test
 
-# Test specific components
-make test-app          # Unit + API + UI tests
-make test-ui           # Streamlit UI tests only
-make test-integration  # End-to-end workflows
-make test-models       # Model compatibility
-make test-security     # Security measures
-make test-performance  # Performance benchmarks
+# Quick tests for development (no services needed)
+make test-quick        # Unit + Streamlit tests only (~1 minute)
+
+# Individual test suites
+make test-unit         # Unit tests (includes security)
+make test-streamlit    # Native logic tests (~30s)
+make test-api          # API endpoint tests (~1 minute)
+make test-integration  # Integration tests
+make test-performance  # Performance tests
+
+# Visual regression testing
+make test-screens           # Run visual regression tests
+make test-screens-baseline  # Create baseline screenshots
+
+# Model testing
+make test-models       # Test specific models
+make test-models-quick # Quick compatibility test
 ```
 
 ### Test Infrastructure
-- **UI Tests**: Use Playwright for browser automation
-- **Test Runner**: `tests/green_test_runner.py` orchestrates all tests
+- **No Browser Tests**: We removed Selenium tests in favor of native Streamlit tests
+- **Test Runner**: Simplified test runner in `tests/run_tests.py`
 - **Fixtures**: Test files in `tests/fixtures/`
-- **Results**: JSON reports in `tests/results/`
+- **Security Tests**: Included in unit tests
 
 ### Common Test Issues & Solutions
 
-1. **Playwright Browser Error**:
-   - The test runner automatically installs browsers if needed
-   - If services are already running (via `make run`), tests detect and use them
-
-2. **Port Conflicts**:
+1. **Port Conflicts**:
    - Tests check if services are already running before starting new instances
    - No need to stop `make run` before testing
 
-3. **Import Errors**:
+2. **Import Errors**:
    - All imports should use `from src.module` format
    - Never use relative imports in tests
+
+3. **Model Tests**:
+   - Require models to be downloaded first
+   - Use `make test-models MODELS='mistral'` to test specific models
+
+### Best Practices for Testing
+- Run `make test-quick` during development for fast feedback
+- Run `make test` before committing
+- Use `make test-streamlit` for quick logic checks
+- Run `make test-screens` after UI changes
+- Model tests are separate from regular tests
+- All tests should pass before merging
 
 ## Important Make Commands
 
@@ -87,10 +114,17 @@ make test-performance  # Performance benchmarks
 - `make sass-compressed` - Production build
 
 ### Testing
-- `make test` - Run complete test suite
-- `make test-app` - Application tests
-- `make test-ui` - UI tests only
+- `make test` - Run all tests (unit + streamlit + API + integration + performance)
+- `make test-quick` - Quick tests only (unit + streamlit, no services needed)
+- `make test-unit` - Unit tests (includes security tests)
+- `make test-streamlit` - Native Streamlit logic tests (fastest)
+- `make test-api` - API endpoint tests
+- `make test-integration` - Integration tests
+- `make test-performance` - Performance optimization tests
+- `make test-screens` - Visual regression tests
+- `make test-screens-baseline` - Create baseline screenshots
 - `make test-models MODELS='mistral,llama3'` - Test specific models
+- `make test-models-quick` - Quick model compatibility test
 
 ## Architecture Details
 
@@ -106,13 +140,19 @@ make test-performance  # Performance benchmarks
 │   ├── ui/                # Streamlit UI components
 │   ├── performance/       # Performance monitoring
 │   └── *.py              # Core modules
-├── static/
-│   ├── scss/             # SASS source files
-│   └── css/              # Compiled CSS (gitignored)
+├── assets/
+│   ├── styles/
+│   │   ├── scss/         # SASS source files
+│   │   └── css/          # Compiled CSS (gitignored)
+│   └── scripts/          # Build scripts
 ├── tests/
 │   ├── unit/             # Unit tests
 │   ├── integration/      # Integration tests
-│   ├── ui/               # UI tests (Playwright)
+│   ├── streamlit/        # Streamlit native tests
+│   ├── api/              # API tests
+│   ├── performance/      # Performance tests
+│   ├── visual_regression/# Visual screenshot tests
+│   ├── results/          # Test output files (gitignored)
 │   └── fixtures/         # Test data
 ├── vector_stores/        # Persistent FAISS indexes
 ├── uploads/              # Temporary file storage
@@ -168,14 +208,14 @@ make test-models-quick
 ## CSS/Styling System
 
 ### SASS Structure
-- Source: `static/scss/`
-- Output: `static/css/` (gitignored)
+- Source: `assets/styles/scss/`
+- Output: `assets/styles/css/` (gitignored)
 - Auto-compilation with `make run`
 - BEM naming convention
 - Design tokens for consistency
 
 ### Adding Styles
-1. Edit SCSS files in `static/scss/`
+1. Edit SCSS files in `assets/styles/scss/`
 2. Changes compile automatically with `make run`
 3. Use existing variables and mixins
 4. Follow component-based organization
@@ -185,7 +225,7 @@ make test-models-quick
 ### When Making Changes
 1. Run `make run` to start the app
 2. Make changes to code
-3. Test with `make test-app` or specific test commands
+3. Test with `make test` or specific test commands
 4. Verify UI changes visually
 5. Run `make test` before committing
 
@@ -198,7 +238,6 @@ make test-models-quick
 
 ### Debugging Tips
 - Check service status with `make monitor`
-- UI test screenshots saved to `tests/ui/screenshots/`
 - Logs available in terminal output
 - Use `--verbose` flag for detailed test output
 

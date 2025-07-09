@@ -12,7 +12,6 @@ ENV/
 # Project specific
 uploads/
 vector_stores/
-*.pdf
 *.faiss
 *.metadata
 
@@ -27,8 +26,8 @@ vector_stores/
 Thumbs.db
 
 # Logs
-*.log
-ollama.log
+logs/*
+!logs/.gitkeep
 
 # Environment variables
 .env
@@ -40,6 +39,7 @@ temp/
 tmp/
 
 # Test artifacts
+.pytest_cache/
 tests/screenshots/
 tests/results/
 .streamlit/
@@ -48,13 +48,15 @@ tests/results/
 !src/model_config.json
 !tests/test_config.json
 !pytest.ini
+*_test_results.json
+tests/ui/screenshots/*.png
+cleanup_report.txt
 
 # Backup and temporary scripts
 app_backup.py
 app_original.py
 app_fragment.py
 app_simple_delete.py
-check_port.py
 
 # Keep test fixtures - they're valuable for other developers
 # Only ignore the test fixture generator scripts (already listed above)
@@ -67,12 +69,10 @@ node_modules/
 package-lock.json
 
 # Generated CSS (built from SASS)
-static/css/
+assets/styles/css/
 *.css.map
 
-# Session state and runtime files
-session_state/
-processing_state/
+# Cache and runtime files
 cache/
 
 # One-off and test scripts at root

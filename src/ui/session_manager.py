@@ -18,7 +18,7 @@ class IsolatedSessionManager:
     """Manages session state with proper user isolation"""
     
     def __init__(self):
-        self.session_dir = Path("session_state")
+        self.session_dir = Path("cache/sessions")
         self.session_dir.mkdir(exist_ok=True)
         
         # Session configuration

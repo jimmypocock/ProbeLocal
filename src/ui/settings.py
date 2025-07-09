@@ -14,9 +14,9 @@ def render_system_monitor() -> None:
 
         # Storage stats
         stats = get_storage_stats()
-        if stats:
-            st.metric("Documents", f"{stats['document_count']}/{stats['max_documents']}")
-            st.metric("Storage Used", f"{stats['total_size_mb']:.1f}MB")
+        if stats and 'error' not in stats:
+            st.metric("Documents", f"{stats.get('total_documents', 0)}/{stats.get('max_documents', 20)}")
+            st.metric("Storage Used", f"{stats.get('total_size_mb', 0):.1f}MB")
 
 
 def render_preset_buttons() -> None:

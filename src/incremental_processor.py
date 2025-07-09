@@ -56,7 +56,7 @@ class IncrementalProcessor:
                 )
         
         # Processing state directory
-        self.state_dir = Path("processing_state")
+        self.state_dir = Path("cache/processing")
         self.state_dir.mkdir(exist_ok=True)
     
     def process_file_incremental(

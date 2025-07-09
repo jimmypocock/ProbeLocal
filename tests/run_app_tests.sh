@@ -41,12 +41,8 @@ fi
 # Run the tests
 echo ""
 echo "🧪 Running tests..."
-# Add --fast flag by default unless --full is specified
-if [[ " $@ " =~ " --full " ]]; then
-    ./venv/bin/python tests/run_tests.py --suite all $@
-else
-    ./venv/bin/python tests/run_tests.py --suite all --fast --exitfirst $@
-fi
+# Run all tests without skipping any
+./venv/bin/python tests/run_tests.py --suite all --exitfirst $@
 
 TEST_EXIT_CODE=$?
 

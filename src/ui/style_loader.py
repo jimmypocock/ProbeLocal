@@ -9,7 +9,7 @@ import os
 class StyleLoader:
     """Handles loading and injecting CSS styles into Streamlit app"""
     
-    def __init__(self, css_dir: str = "static/css"):
+    def __init__(self, css_dir: str = "assets/styles/css"):
         self.css_dir = Path(css_dir)
         self._loaded_styles = set()
     
@@ -92,7 +92,7 @@ class StyleLoader:
         """Try to build SASS files if CSS is missing"""
         try:
             # Check if build script exists
-            build_script = Path("scripts/build_sass.py")
+            build_script = Path("assets/scripts/build_sass.py")
             if not build_script.exists():
                 return False
             

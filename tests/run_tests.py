@@ -89,33 +89,48 @@ class TestRunner:
         if self.args.suite == "all":
             # Unit tests (can run in parallel)
             suites["Unit"] = base_args + [
-                "tests/unit/",
-                "-m", "not slow" if self.args.fast else "",
-                "--ignore=tests/unit/test_story_image_processing.py" if self.args.fast else "",
-                "--ignore=tests/unit/test_content_image_processing.py" if self.args.fast else "",
+                "tests/unit/"
             ]
             
             # Integration tests (run sequentially)
             if not self.args.unit_only:
                 suites["Integration"] = base_args + [
-                    "tests/integration/",
-                    "-m", "not slow" if self.args.fast else "",
+                    "tests/integration/"
                 ]
                 
-                # UI tests (run sequentially)
-                suites["UI"] = base_args + [
-                    "tests/ui/",
-                    "-m", "not slow" if self.args.fast else "",
+                
+                # Performance tests
+                suites["Performance"] = base_args + [
+                    "tests/performance/"
+                ]
+                
+                
+                # API tests
+                suites["API"] = base_args + [
+                    "tests/api/"
+                ]
+                
+                # Streamlit tests
+                suites["Streamlit"] = base_args + [
+                    "tests/streamlit/"
                 ]
         
         elif self.args.suite == "unit":
-            suites["Unit"] = base_args + ["tests/unit/", "-m", "not slow" if self.args.fast else ""]
+            suites["Unit"] = base_args + ["tests/unit/"]
             
         elif self.args.suite == "integration":
-            suites["Integration"] = base_args + ["tests/integration/", "-m", "not slow" if self.args.fast else ""]
+            suites["Integration"] = base_args + ["tests/integration/"]
             
-        elif self.args.suite == "ui":
-            suites["UI"] = base_args + ["tests/ui/", "-m", "not slow" if self.args.fast else ""]
+            
+        elif self.args.suite == "performance":
+            suites["Performance"] = base_args + ["tests/performance/"]
+            
+            
+        elif self.args.suite == "api":
+            suites["API"] = base_args + ["tests/api/"]
+            
+        elif self.args.suite == "streamlit":
+            suites["Streamlit"] = base_args + ["tests/streamlit/"]
         
         # Add coverage if requested
         if self.args.coverage:
@@ -197,7 +212,7 @@ def main():
     
     parser.add_argument(
         "--suite",
-        choices=["all", "unit", "integration", "ui"],
+        choices=["all", "unit", "integration", "performance", "api", "streamlit"],
         default="all",
         help="Test suite to run"
     )

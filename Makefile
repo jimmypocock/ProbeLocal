@@ -5,6 +5,7 @@ help:
 	@echo "  make run              - Start Greg (preferred port: 2402)"
 	@echo "  make install          - Install dependencies"
 	@echo "  make clean            - Clean up temporary files"
+	@echo "  make clean-logs       - Clean up log files"
 	@echo "  make monitor          - Show memory and storage usage"
 	@echo "  make models           - List available Ollama models"
 	@echo "  make download-embeddings - Download embedding models for offline use"
@@ -15,14 +16,21 @@ help:
 	@echo "  make sass-compressed  - Build minified CSS for production"
 	@echo ""
 	@echo "Testing commands:"
-	@echo "  make test             - Run ALL tests (comprehensive: app + models)"
-	@echo "  make test-app         - Test application (unit + API + UI)"
-	@echo "  make test-ui          - Test Streamlit UI with browser automation"
+	@echo "  make test             - Run complete test suite (all except models)"
+	@echo "  make test-quick       - Quick tests only (unit + streamlit, no services needed)"
+	@echo "  make test-unit        - Unit tests for individual components"
+	@echo "  make test-streamlit   - Native Streamlit logic tests (fast, reliable)"
+	@echo "  make test-api         - Comprehensive API endpoint tests"
 	@echo "  make test-integration - Test complete workflows and error scenarios"
+	@echo "  make test-ui          - Test Streamlit UI with browser automation"
+	@echo "  make test-performance - Test performance (load, memory, response times)"
+	@echo "  make test-security    - Test security measures (file limits, injections, etc.)"
+	@echo "  make test-visual      - Manual visual testing checklist"
+	@echo "  make test-screens     - Run visual regression tests with Playwright"
+	@echo "  make test-screens-baseline - Create baseline screenshots for visual tests"
 	@echo "  make test-models      - Test model compatibility with various formats"
 	@echo "  make test-models-quick - Quick test of file format support"
-	@echo "  make test-security    - Test security measures (file limits, injections, etc.)"
-	@echo "  make test-performance - Test performance (load, memory, response times)"
+	@echo "  make test-critical    - Minimal critical-path browser tests"
 
 run:
 	@./run.sh
@@ -40,13 +48,10 @@ clean:
 	@rm -rf uploads/* vector_stores/* 2>/dev/null || true
 	@echo "✅ Cleanup complete"
 
-test:
-	@echo "🧪 Running Complete Test Suite"
-	@echo "=============================="
-	@echo "This will run ALL tests: unit, app (API+UI), and models"
-	@echo ""
-	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
-	@./tests/run_all_tests_comprehensive.sh
+clean-logs:
+	@echo "🧹 Cleaning log files..."
+	@rm -f logs/*.log 2>/dev/null || true
+	@echo "✅ Logs cleaned"
 
 dev:
 	@echo "Starting in development mode..."
@@ -80,23 +85,35 @@ download-embeddings:
 
 sass:
 	@echo "🎨 Building SASS to CSS..."
-	@python scripts/build_sass.py
+	@python assets/scripts/build_sass.py
 
 sass-watch:
 	@echo "👀 Building SASS and watching for changes..."
-	@python scripts/build_sass.py --watch
+	@python assets/scripts/build_sass.py --watch
 
 sass-compressed:
 	@echo "📦 Building minified CSS for production..."
-	@python scripts/build_sass.py --compressed
+	@python assets/scripts/build_sass.py --compressed
 
+storage-report:
+	@echo "💾 Storage Cleanup Report:"
+	@echo "Documents older than 7 days or exceeding 20 count limit will be auto-removed"
+	@find vector_stores -name "*.metadata" -mtime +7 2>/dev/null | wc -l | xargs -I {} echo "  Documents older than 7 days: {}"
+	@echo "  Total documents: $$(find vector_stores -name "*.metadata" 2>/dev/null | wc -l | tr -d ' ')"
+
+test:
+	@echo "🎮 Testing Application (Complete Test Suite)"
+	@echo "==========================================="
+	@echo "Testing: Unit, API, Integration, Streamlit & Performance"
+	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
+	@./tests/run_app_tests.sh
 
 test-models-quick:
 	@echo "⚡ Quick Model Format Test"
 	@echo "========================="
 	@echo "Testing: One model with multiple file formats"
 	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
-	@./venv/bin/python tests/test_format_quick.py
+	@./venv/bin/python tests/integration/test_format_quick.py
 
 test-models:
 	@echo "🤖 Testing Specific Models"
@@ -104,23 +121,16 @@ test-models:
 	@echo "Usage: make test-models MODELS='mistral,llama3'"
 	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
 	@if [ -n "$(MODELS)" ]; then \
-		./venv/bin/python tests/test_multiformat_models.py --models "$(MODELS)"; \
+		./venv/bin/python tests/integration/test_multiformat_models.py --models "$(MODELS)"; \
 	else \
 		echo "Please specify models: make test-models MODELS='mistral,llama3'"; \
 	fi
 
-test-app:
-	@echo "🎮 Testing Application (Complete Test Suite)"
-	@echo "==========================================="
-	@echo "Testing: Unit, API, UI, Integration, Security & Performance"
+test-quick:
+	@echo "⚡ Running Quick Tests (Unit + Streamlit)"
+	@echo "========================================"
 	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
-	@./tests/run_app_tests.sh
-
-test-fast:
-	@echo "⚡ Running Fast Tests Only"
-	@echo "========================="
-	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
-	@./venv/bin/python tests/run_tests.py --suite all --fast --parallel
+	@./tests/run_tests_quick.sh
 
 test-unit:
 	@echo "🧪 Running Unit Tests"
@@ -134,59 +144,43 @@ test-integration:
 	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
 	@./venv/bin/python tests/run_tests.py --suite integration
 
-test-coverage:
-	@echo "📊 Running Tests with Coverage"
-	@echo "============================"
+test-streamlit:
+	@echo "⚡ Running Native Streamlit AppTests"
+	@echo "===================================="
+	@echo "Testing app logic without browser overhead"
 	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
-	@./venv/bin/python tests/run_tests.py --suite all --coverage --fast
+	@./venv/bin/python -m pytest tests/streamlit/ -v
 
-test-ci:
-	@echo "🤖 Running CI Test Suite"
-	@echo "======================"
-	@export CI=true
-	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
-	@./venv/bin/python -m pytest tests/ -m "not skip_ci" --maxfail=5 -n auto
-
-
-test-ui:
-	@echo "🧪 Running Streamlit UI Tests"
-	@echo "============================="
-	@echo "Testing UI with browser automation (Selenium)"
-	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
-	@./venv/bin/python -m pytest tests/ui/ -v --tb=short
-
-test-visual:
-	@echo "🎨 Running Visual Regression Tests"
+test-api:
+	@echo "🌐 Running Comprehensive API Tests"
 	@echo "=================================="
-	@echo "⚠️  Visual regression tests not implemented for Selenium yet"
-	@echo "Use manual testing or implement screenshot comparison with Selenium"
-
-test-visual-baseline:
-	@echo "📸 Creating Visual Regression Baseline"
-	@echo "====================================="
-	@python tests/visual_regression/test_visual_regression.py --create-baseline
-
-# Removed duplicate test-integration target
-
-
-test-security:
-	@echo "🔒 Testing Security Measures"
-	@echo "============================"
-	@echo "Testing: file limits, malicious files, injections, etc."
+	@echo "Testing all backend endpoints and functionality"
 	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
-	@./venv/bin/python tests/test_security.py
+	@./venv/bin/python -m pytest tests/api/ -v
 
 test-performance:
 	@echo "⚡ Testing Performance"
 	@echo "====================="
 	@echo "Testing: load handling, memory usage, response times"
 	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
-	@./venv/bin/python tests/test_performance.py
+	@./venv/bin/python -m pytest tests/performance/ -v
 
-storage-report:
-	@echo "💾 Storage Cleanup Report:"
-	@echo "Documents older than 7 days or exceeding 20 count limit will be auto-removed"
-	@find vector_stores -name "*.metadata" -mtime +7 2>/dev/null | wc -l | xargs -I {} echo "  Documents older than 7 days: {}"
-	@echo "  Total documents: $$(find vector_stores -name "*.metadata" 2>/dev/null | wc -l | tr -d ' ')"
+test-screens:
+	@echo "📸 Running Visual Regression Tests"
+	@echo "=================================="
+	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
+	@echo "Checking for Playwright installation..."
+	@./venv/bin/python -c "import playwright" 2>/dev/null || (echo "Installing Playwright..." && ./venv/bin/pip install playwright && ./venv/bin/playwright install chromium)
+	@echo "Running visual regression tests..."
+	@./venv/bin/python tests/visual_regression/test_visual_regression.py
+
+test-screens-baseline:
+	@echo "📷 Creating Baseline Screenshots"
+	@echo "================================"
+	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
+	@echo "Checking for Playwright installation..."
+	@./venv/bin/python -c "import playwright" 2>/dev/null || (echo "Installing Playwright..." && ./venv/bin/pip install playwright && ./venv/bin/playwright install chromium)
+	@echo "Creating baseline screenshots..."
+	@./venv/bin/python tests/visual_regression/test_visual_regression.py --create-baseline
 
 # Removed duplicate sass targets - see lines 75-85

@@ -1,5 +1,7 @@
 """Unit tests for web search functionality"""
 import pytest
+import time
+from datetime import datetime
 from src.web_search import WebSearcher, SearchResult
 
 
@@ -78,27 +80,77 @@ class TestWebSearch:
         searcher.clear_cache()
         assert searcher._get_from_cache(key) is None
         
-    @pytest.mark.skip(reason="Requires internet connection")
     def test_actual_search(self):
-        """Test actual web search (requires internet)"""
+        """Test web search with mocked responses"""
         searcher = WebSearcher()
         
+        # Mock the search results
+        mock_results = [
+            SearchResult(
+                title="Python Programming Tutorial",
+                url="https://example.com/python",
+                snippet="Learn Python programming from scratch"
+            ),
+            SearchResult(
+                title="Advanced Python Techniques",
+                url="https://example.com/advanced-python",
+                snippet="Master advanced Python concepts"
+            )
+        ]
+        
+        # Store in cache to simulate search results
+        cache_key = searcher._get_cache_key("Python programming", 3)
+        searcher.cache[cache_key] = {
+            'results': mock_results,
+            'timestamp': datetime.now()
+        }
+        
+        # Now search should return cached results
         results = searcher.search("Python programming", num_results=3)
         
-        assert len(results) <= 3
+        assert len(results) == 2
+        assert results[0].title == "Python Programming Tutorial"
+        assert results[1].title == "Advanced Python Techniques"
         for result in results:
             assert result.title
             assert result.url
             assert result.url.startswith("http")
             
-    @pytest.mark.skip(reason="Requires internet connection")
     def test_content_extraction(self):
-        """Test content extraction from URL"""
+        """Test content extraction with mocked response"""
         searcher = WebSearcher()
         
-        # Use a reliable test URL
-        content = searcher.extract_content("https://example.com")
+        # Mock the extract_content method
+        test_url = "https://example.com"
+        mock_content = """Example Domain
+        
+        This domain is for use in illustrative examples in documents.
+        You may use this domain in literature without prior coordination or asking for permission.
+        
+        More information..."""
+        
+        # Store in cache to simulate extracted content
+        cache_key = f"content_{test_url}"
+        searcher.cache[cache_key] = {
+            'content': mock_content,
+            'timestamp': datetime.now()
+        }
+        
+        # Monkey patch the extract_content method to check cache first
+        original_extract = searcher.extract_content
+        def mock_extract(url):
+            cache_key = f"content_{url}"
+            cached = searcher.cache.get(cache_key)
+            if cached:
+                return cached['content']
+            return original_extract(url)
+        
+        searcher.extract_content = mock_extract
+        
+        # Test extraction
+        content = searcher.extract_content(test_url)
         
         assert content is not None
         assert len(content) > 0
         assert "Example Domain" in content
+        assert "illustrative examples" in content

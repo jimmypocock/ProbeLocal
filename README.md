@@ -65,7 +65,7 @@ ollama pull mistral
 
 **Option 2: Download from Ollama website**
 
-1. Visit https://ollama.com/download/mac
+1. Visit <https://ollama.com/download/mac>
 2. Download and install Ollama.app
 3. Drag to Applications folder and open
 4. The app will install the `ollama` command line tool
@@ -126,49 +126,62 @@ source venv/bin/activate
 streamlit run app.py
 ```
 
-That's it! Open http://localhost:8501 and start uploading PDFs.
+That's it! Open <http://localhost:8501> and start uploading PDFs.
 
 **Note**: The API runs on port 8080 by default. If you need to change it, update the port in both `main.py` and `app.py`.
 
 ## Available Models (All Free)
 
-### For M3 with 8GB RAM:
+### For M3 with 8GB RAM
 
 - **Phi (2.7B)** - Fastest, good for simple Q&A
+
   ```bash
   ollama pull phi
   ```
+
 - **Mistral (7B)** - Best balance of speed and quality
+
   ```bash
   ollama pull mistral
   ```
 
-### For M3 with 16GB RAM (Recommended for better accuracy):
+### For M3 with 16GB RAM (Recommended for better accuracy)
 
 - **Mistral (7B)** - Best balance, leaves RAM for other apps
+
   ```bash
   ollama pull mistral
   ```
+
 - **Neural-Chat (7B)** - Intel-optimized, good for structured data
+
   ```bash
   ollama pull neural-chat
   ```
+
 - **Llama 2 (7B)** - Alternative with good reasoning
+
   ```bash
   ollama pull llama2
   ```
+
 - **Dolphin-Mistral (7B)** - Fine-tuned for following instructions
+
   ```bash
   ollama pull dolphin-mistral
   ```
 
-### For M3 with 24GB+ RAM:
+### For M3 with 24GB+ RAM
 
 - **Llama 2 (13B)** - Much better accuracy
+
   ```bash
   ollama pull llama2:13b
   ```
+
 - **Mixtral (8x7B)** - State-of-the-art
+
   ```bash
   ollama pull mixtral
   ```
@@ -396,7 +409,7 @@ CHUNK_SIZE=800
 
 ## Cost Analysis
 
-### Completely Free Stack:
+### Completely Free Stack
 
 - **LLM**: Ollama + Open Source Models - $0
 - **Embeddings**: Sentence Transformers - $0
@@ -406,7 +419,7 @@ CHUNK_SIZE=800
 - **UI**: Streamlit - $0
 - **Total Monthly Cost**: $0
 
-### Comparison to Cloud:
+### Comparison to Cloud
 
 - OpenAI API: ~$50-200/month
 - AWS Deployment: ~$100-500/month
@@ -417,6 +430,7 @@ CHUNK_SIZE=800
 ### Understanding the Technology
 
 This system uses **Retrieval-Augmented Generation (RAG)**, which means:
+
 1. Your PDF is split into small chunks (~2000 characters each)
 2. When you ask a question, it searches for the 5 most relevant chunks
 3. Only those 5 chunks are given to the AI to formulate an answer
@@ -435,6 +449,7 @@ Think of it as having a very smart assistant who can only look at 5 pages at a t
 | **Presentations** | 10-50 slides | Find specific information, data points | 85% |
 
 **Best for:**
+
 - ✅ Finding specific information (numbers, dates, names)
 - ✅ Answering focused questions about particular sections
 - ✅ Extracting data from structured documents
@@ -452,6 +467,7 @@ Think of it as having a very smart assistant who can only look at 5 pages at a t
 | **Financial Reports** | Can't aggregate data from multiple tables | Sees fragments, not full picture |
 
 **Not suitable for:**
+
 - ❌ Understanding narrative or story progression
 - ❌ Comprehensive document summarization
 - ❌ Cross-referencing between distant sections
@@ -460,14 +476,16 @@ Think of it as having a very smart assistant who can only look at 5 pages at a t
 
 ### Practical Examples
 
-#### ✅ Good Questions:
+#### ✅ Good Questions
+
 - "What is the invoice total?"
 - "What methodology is described in section 3?"
 - "What is the configuration for the database?"
 - "When is the payment due date?"
 - "What are the key findings on page 15?"
 
-#### ❌ Poor Questions:
+#### ❌ Poor Questions
+
 - "Summarize this entire book"
 - "How does the character develop throughout the story?"
 - "What are all the financial implications across all sections?"
@@ -501,6 +519,7 @@ Think of it as having a very smart assistant who can only look at 5 pages at a t
 ### When to Use Alternative Solutions
 
 Consider cloud-based solutions (ChatGPT, Claude) when you need to:
+
 - Analyze entire books or very long documents
 - Understand complex relationships across a document
 - Generate comprehensive summaries
@@ -510,7 +529,7 @@ This local solution excels at privacy, cost (free), and specific information ext
 
 ## Privacy & Security
 
-### What Stays Local:
+### What Stays Local
 
 - ✅ Your PDFs never leave your machine
 - ✅ All processing happens on your M3
@@ -518,7 +537,7 @@ This local solution excels at privacy, cost (free), and specific information ext
 - ✅ No internet required after setup
 - ✅ No usage tracking or telemetry
 
-### Security Best Practices:
+### Security Best Practices
 
 ```bash
 # 1. Encrypt sensitive PDFs at rest
@@ -529,7 +548,7 @@ This local solution excels at privacy, cost (free), and specific information ext
 
 ## Benchmarks on M3
 
-### Real-World Tests (M3 Base 8GB):
+### Real-World Tests (M3 Base 8GB)
 
 | Task        | Mistral 7B | Phi 2.7B | Time Saved |
 | ----------- | ---------- | -------- | ---------- |
@@ -542,46 +561,174 @@ This local solution excels at privacy, cost (free), and specific information ext
 ## Testing
 
 ### Quick Start
-```bash
-# Run all tests (excluding model tests)
-make test-app
 
-# Run only fast tests (skip slow image processing)
-make test-fast
+```bash
+# Run complete test suite (all except models)
+make test
+
+# Quick tests for development (no services needed)
+make test-quick        # Unit + Streamlit tests only (~1 minute)
 
 # Run specific test suites
-make test-unit        # Unit tests only
-make test-integration # Integration tests
-make test-ui         # UI tests (Selenium)
+make test-unit         # Unit tests (includes security tests)
+make test-integration  # Integration tests
+make test-streamlit    # Native Streamlit logic tests
+make test-api          # API endpoint tests
+make test-performance  # Performance optimization tests
 
-# Test with coverage report
-make test-coverage
-```
+# Visual regression testing
+make test-screens           # Run visual regression tests
+make test-screens-baseline  # Create baseline screenshots
 
-### Testing Models
-```bash
-# Test specific models with various file formats
+# Model testing
 make test-models MODELS="mistral,llama3,deepseek"
-
-# Quick model compatibility test
-make test-models-quick
+make test-models-quick  # Quick compatibility test
 ```
 
-### Test Structure
-- **Unit Tests**: Fast, isolated tests for individual components
-- **Integration Tests**: API endpoint and service interaction tests
-- **UI Tests**: Selenium-based browser automation tests
-- **Model Tests**: Comprehensive testing of different Ollama models
+### Test Categories
+
+#### 1. **Unit Tests** (`make test-unit`)
+
+- **Purpose**: Test individual functions and classes in isolation
+- **Speed**: Very fast (< 30 seconds)
+- **Coverage**: Document processing, streaming, utilities, security validations
+- **When to run**: After every code change
+
+#### 2. **Integration Tests** (`make test-integration`)
+
+- **Purpose**: Test component interactions and workflows
+- **Speed**: Moderate (1-3 minutes)
+- **Coverage**: Full workflows, error scenarios, web search integration
+- **When to run**: Before commits, after major changes
+
+#### 3. **API Tests** (`make test-api`)
+
+- **Purpose**: Test all FastAPI endpoints
+- **Speed**: Fast (< 1 minute)
+- **Coverage**: Upload, query, delete, health checks
+- **When to run**: After API changes
+
+#### 4. **Streamlit Tests** (`make test-streamlit`)
+
+- **Purpose**: Test Streamlit app logic without browser
+- **Speed**: Fast (< 30 seconds)
+- **Coverage**: App state, component rendering, interactions
+- **When to run**: After Streamlit code changes
+
+#### 5. **Performance Tests** (`make test-performance`)
+
+- **Purpose**: Test system performance and resource usage
+- **Speed**: Moderate (2-3 minutes)
+- **Coverage**: Load handling, memory usage, response times, caching
+- **When to run**: Before releases, after optimization work
+
+#### 6. **Visual Regression Tests** (`make test-screens`)
+
+- **Purpose**: Catch visual UI changes across different viewports
+- **Speed**: Moderate (2-3 minutes)
+- **Coverage**: UI screenshots across desktop, laptop, tablet, mobile
+- **When to run**: After UI changes, before releases
+
+#### 7. **Model Tests** (`make test-models`)
+
+- **Purpose**: Test compatibility with different Ollama models
+- **Speed**: Slow (varies by models tested)
+- **Coverage**: Model-specific behavior with various file formats
+- **When to run**: When adding new models or changing processing logic
+
+### Test Organization
+
+```
+tests/
+├── unit/              # Fast, isolated unit tests
+├── integration/       # Tests requiring multiple components
+├── api/               # API endpoint tests
+├── streamlit/         # Native Streamlit app tests
+├── performance/       # Performance and optimization tests
+├── visual_regression/ # Visual regression screenshot tests
+├── fixtures/          # Test data files
+└── utilities/         # Helper scripts
+```
+
+### Running Tests
+
+#### During Development
+
+```bash
+# Quick tests during coding (recommended)
+make test-quick
+
+# Or run individual suites
+make test-unit test-streamlit
+```
+
+#### Before Committing
+
+```bash
+# Run full test suite
+make test
+
+# If UI changes were made
+make test-screens
+```
+
+#### Advanced Testing
+
+```bash
+# Run tests with verbose output
+./venv/bin/python -m pytest tests/unit/ -vvs
+
+# Run specific test file
+./venv/bin/python -m pytest tests/unit/test_document_processing.py
+
+# Run with coverage
+./venv/bin/python tests/run_tests.py --coverage
+
+# Run tests matching pattern
+./venv/bin/python tests/run_tests.py --pattern "test_web_search"
+```
 
 ### Important Notes
-1. **Services must be running**: Start with `make run` before testing
-2. **Selenium tests**: Require Chrome/Chromium browser
-3. **Model tests**: Require Ollama models to be downloaded
+
+1. **Services**: Some tests require running services. Use `make run` first or let tests start them automatically
+2. **No browser tests**: We use native Streamlit tests instead of Selenium for reliability
+3. **Model tests**: Require Ollama models to be downloaded first
 4. **Test data**: Located in `tests/fixtures/`
+5. **Visual tests**: Require Playwright (automatically installed when running)
+
+### Troubleshooting Tests
+
+#### Import Errors
+
+```bash
+source venv/bin/activate
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+```
+
+#### Service Connection Errors
+
+```bash
+# Start services
+make run
+
+# Check what's running
+make monitor
+```
+
+#### Debug Mode
+
+```bash
+# Run with full output
+make test-unit PYTEST_ARGS="-vvs"
+
+# Debug single test
+./venv/bin/python -m pytest tests/unit/test_file.py::test_name -vvs --pdb
+```
 
 ## Development & Styling
 
 ### CSS/SASS Build System
+
 Greg uses a SASS-based styling system for maintainable, modular CSS:
 
 ```bash
@@ -596,12 +743,14 @@ make sass-compressed
 ```
 
 ### Working with Styles
-- **SASS Source**: `static/scss/` - All source SASS files
-- **Compiled CSS**: `static/css/` - Auto-generated, gitignored
+
+- **SASS Source**: `assets/styles/scss/` - All source SASS files
+- **Compiled CSS**: `assets/styles/css/` - Auto-generated, gitignored
 - **Component styles**: Each UI component has its own SCSS file
 - **Design system**: Variables, mixins, and utilities for consistency
 
-### Never use inline styles in Python - Use CSS classes instead:
+### Never use inline styles in Python - Use CSS classes instead
+
 ```python
 # Good ✅
 st.markdown('<div class="chat-message">Hello</div>', unsafe_allow_html=True)
@@ -611,6 +760,7 @@ st.markdown('<div style="color: red;">Hello</div>', unsafe_allow_html=True)
 ```
 
 ### Offline Mode Configuration
+
 For completely offline operation without HuggingFace requests:
 
 ```bash
@@ -626,16 +776,17 @@ make download-embeddings
 ## Next Steps
 
 1. **Start Simple**: Use Phi for initial testing
-2. **Quick Test**: Run `make test-quick` to verify all formats work
-3. **Full Testing**: Run `make test` to compare all models across all formats
-4. **Optimize**: Tune parameters based on test results
-5. **Scale**: Add more models as needed
+2. **Run Tests**: Use `make test` to verify everything works
+3. **Quick Model Test**: Run `make test-models-quick` to verify file format support
+4. **Full Testing**: Run `make test-models` to compare all models
+5. **Optimize**: Tune parameters based on test results
+6. **Scale**: Add more models as needed
 
 ## Community Resources
 
-- **Ollama Discord**: https://discord.gg/ollama
-- **LangChain Community**: https://github.com/langchain-ai/langchain
-- **Apple ML Forums**: https://developer.apple.com/forums/tags/machine-learning
+- **Ollama Discord**: <https://discord.gg/ollama>
+- **LangChain Community**: <https://github.com/langchain-ai/langchain>
+- **Apple ML Forums**: <https://developer.apple.com/forums/tags/machine-learning>
 
 ## Troubleshooting Checklist
 
