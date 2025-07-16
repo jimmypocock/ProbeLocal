@@ -8,20 +8,20 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.qa_chain_enhanced import EnhancedQAChain
+from src.qa_chain_unified import UnifiedQAChain
 from src.web_search import WebSearcher, SearchResult
 
 
 def test_enhanced_qa_chain_initialization():
     """Test that enhanced QA chain initializes properly"""
-    chain = EnhancedQAChain()
+    chain = UnifiedQAChain()
     assert chain.web_searcher is not None
     assert isinstance(chain.web_searcher, WebSearcher)
 
 
 def test_web_only_search():
     """Test web-only search functionality"""
-    chain = EnhancedQAChain()
+    chain = UnifiedQAChain()
     
     # Test with a simple query
     result = chain.answer_question_with_web(
@@ -44,7 +44,7 @@ def test_web_only_search():
 
 def test_web_search_formatting():
     """Test that web search results are properly formatted"""
-    chain = EnhancedQAChain()
+    chain = WebSearchQAChain()
     
     # Create mock search results
     from langchain.schema import Document
@@ -78,7 +78,7 @@ def test_web_search_formatting():
 
 def test_search_web_for_context():
     """Test web search context creation"""
-    chain = EnhancedQAChain()
+    chain = WebSearchQAChain()
     
     # Test search for context
     docs = chain._search_web_for_context("Python programming", num_results=2)

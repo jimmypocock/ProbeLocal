@@ -34,7 +34,6 @@ class IsolatedSessionManager:
             'chunk_size',
             'temperature',
             'max_results',
-            'use_streaming',
             'use_web_search',
             'messages',
             'chat_input_key'
@@ -226,16 +225,20 @@ session_manager = IsolatedSessionManager()
 
 def initialize_session() -> None:
     """Initialize session with default values"""
+    # Get configured model from environment
+    from src.config import Config
+    config = Config()
+    default_model = config.LOCAL_LLM_MODEL
+    
     defaults = {
         'messages': [],
         'current_document_id': None,
-        'selected_model': 'mistral',
-        'current_model': 'mistral',
+        'selected_model': default_model,
+        'current_model': default_model,
         'chunk_size': 800,
         'temperature': 0.7,
         'max_results': 5,
-        'use_streaming': False,
-        'use_web_search': False,
+        'use_web_search': True,
         'chat_input_key': 0
     }
     

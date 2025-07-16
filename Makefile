@@ -10,11 +10,6 @@ help:
 	@echo "  make models           - List available Ollama models"
 	@echo "  make download-embeddings - Download embedding models for offline use"
 	@echo ""
-	@echo "Styling commands:"
-	@echo "  make sass             - Build SASS to CSS"
-	@echo "  make sass-watch       - Build SASS and watch for changes"
-	@echo "  make sass-compressed  - Build minified CSS for production"
-	@echo ""
 	@echo "Testing commands:"
 	@echo "  make test             - Run complete test suite (all except models)"
 	@echo "  make test-quick       - Quick tests only (unit + streamlit, no services needed)"
@@ -28,8 +23,9 @@ help:
 	@echo "  make test-visual      - Manual visual testing checklist"
 	@echo "  make test-screens     - Run visual regression tests with Playwright"
 	@echo "  make test-screens-baseline - Create baseline screenshots for visual tests"
-	@echo "  make test-models      - Test model compatibility with various formats"
-	@echo "  make test-models-quick - Quick test of file format support"
+	@echo "  make test-models      - Test all installed models (auto-detects)"
+	@echo "  make test-models-quick - Quick test with current documents"
+	@echo "  make list-models      - Show all models available for testing"
 	@echo "  make test-critical    - Minimal critical-path browser tests"
 
 run:
@@ -83,18 +79,6 @@ download-embeddings:
 	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
 	@./venv/bin/python download_embeddings.py
 
-sass:
-	@echo "🎨 Building SASS to CSS..."
-	@python assets/scripts/build_sass.py
-
-sass-watch:
-	@echo "👀 Building SASS and watching for changes..."
-	@python assets/scripts/build_sass.py --watch
-
-sass-compressed:
-	@echo "📦 Building minified CSS for production..."
-	@python assets/scripts/build_sass.py --compressed
-
 storage-report:
 	@echo "💾 Storage Cleanup Report:"
 	@echo "Documents older than 7 days or exceeding 20 count limit will be auto-removed"
@@ -109,21 +93,40 @@ test:
 	@./tests/run_app_tests.sh
 
 test-models-quick:
-	@echo "⚡ Quick Model Format Test"
-	@echo "========================="
-	@echo "Testing: One model with multiple file formats"
+	@echo "⚡ Quick Model Differentiation Test"
+	@echo "=================================="
+	@echo "Testing: Can model differentiate between documents in unified store"
 	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
-	@./venv/bin/python tests/integration/test_format_quick.py
+	@./venv/bin/python tests/integration/test_model_quick.py
 
-test-models:
-	@echo "🤖 Testing Specific Models"
-	@echo "==========================="
-	@echo "Usage: make test-models MODELS='mistral,llama3'"
+list-models:
+	@echo "📋 Available Models for Testing"
+	@echo "==============================="
+	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
+	@./venv/bin/python scripts/list_testable_models.py
+
+test-models-direct:
+	@echo "🚀 Direct Model Testing (Fast)"
+	@echo "=============================="
 	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
 	@if [ -n "$(MODELS)" ]; then \
-		./venv/bin/python tests/integration/test_multiformat_models.py --models "$(MODELS)"; \
+		echo "Testing specified models: $(MODELS)"; \
+		./venv/bin/python tests/integration/test_unified_models_direct.py --models "$(MODELS)"; \
 	else \
-		echo "Please specify models: make test-models MODELS='mistral,llama3'"; \
+		echo "Auto-detecting and testing all installed models..."; \
+		./venv/bin/python tests/integration/test_unified_models_direct.py; \
+	fi
+
+test-models:
+	@echo "🤖 Testing Models"
+	@echo "================="
+	@if [ ! -f venv/bin/python ]; then echo "❌ Please run 'make install' first"; exit 1; fi
+	@if [ -n "$(MODELS)" ]; then \
+		echo "Testing specified models: $(MODELS)"; \
+		./venv/bin/python tests/integration/test_unified_models_isolated.py --models "$(MODELS)"; \
+	else \
+		echo "Auto-detecting and testing all installed models..."; \
+		./venv/bin/python tests/integration/test_unified_models_isolated.py; \
 	fi
 
 test-quick:

@@ -4,41 +4,13 @@ import requests
 from typing import Optional, Tuple
 from .utils import check_ollama, get_available_models, get_model_info
 from .notifications import add_notification
-from .connection_status import render_compact_status, render_status_card
 from .session_manager import initialize_session, save_session, get_session_info
 
 
 def render_header() -> None:
-    """Render the main header with status indicators"""
-    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
-
-    with col1:
-        st.title("🤖 Greg - AI Playground")
-        st.caption("Your Local AI Assistant - 100% Free and Private")
-
-    with col2:
-        # Service status indicators
-        st.markdown("**Status:**")
-        render_compact_status()
-
-    with col3:
-        # System status expander
-        render_status_card()
-
-    with col4:
-        # Help button
-        with st.popover("❓ Help"):
-            st.markdown("""
-            **Quick Start:**
-            1. Upload a document (PDF, TXT, etc.)
-            2. Select an AI model
-            3. Ask questions!
-
-            **Tips:**
-            - Drag & drop files to upload
-            - Use @ to reference documents
-            - Try example questions
-            """)
+    """Render the main header"""
+    st.title("🤖 Greg - AI Playground")
+    st.caption("Your Local AI Assistant - 100% Free and Private")
 
 
 def render_model_selector() -> Optional[str]:
@@ -55,8 +27,25 @@ def render_model_selector() -> Optional[str]:
         )
 
         if selected_model != st.session_state.current_model:
-            st.session_state.current_model = selected_model
-            add_notification(f"🔄 Switched to {selected_model}", "info", 3)
+            # Import model manager
+            from src.ui.model_manager import switch_model, estimate_model_memory
+            
+            old_model = st.session_state.current_model
+            
+            # Check memory implications
+            new_model_size = estimate_model_memory(selected_model)
+            if new_model_size > 8.0:  # Warning for large models
+                st.warning(f"⚠️ {selected_model} uses ~{new_model_size:.1f}GB RAM")
+            
+            # Perform smart model switch
+            try:
+                switch_model(selected_model, old_model)
+                st.session_state.current_model = selected_model
+                add_notification(f"✅ Switched to {selected_model}", "success", 3)
+            except Exception as e:
+                add_notification(f"❌ Failed to switch model: {str(e)}", "error", 5)
+                # Revert selection
+                st.session_state.current_model = old_model
 
         return selected_model
     return None
@@ -74,9 +63,7 @@ def init_session_state() -> None:
         'toast_shown': set(),  # Track shown toasts
         'document_search': "",
         'show_advanced': False,
-        'delete_confirmed': None,
-        'pending_question': None,
-        'use_streaming': True  # Enable streaming by default
+        'delete_confirmed': None
     }
 
     for key, default_value in additional_defaults.items():

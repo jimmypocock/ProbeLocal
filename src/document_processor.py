@@ -29,19 +29,10 @@ class DocumentProcessor:
         self.config = Config()
         self.config.create_directories()
 
-        # Initialize LLM and embeddings
-        self.llm_system = OptimizedLLM(self.config)
-        self.embeddings = self.llm_system.get_embeddings()
-
-        # Get optimal settings
-        optimal = self.config.get_optimal_settings()
-
-        self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=optimal["chunk_size"],
-            chunk_overlap=self.config.CHUNK_OVERLAP,
-            length_function=len,
-            separators=["\n\n", "\n", " ", ""]
-        )
+        # Lazy initialization - don't require LLM just to load vector stores
+        self.llm_system = None
+        self.embeddings = None
+        self.text_splitter = None
         
         # Initialize incremental processor for large files
         self.incremental_processor = IncrementalProcessor()
@@ -65,6 +56,53 @@ class DocumentProcessor:
             'jpg': self._load_image,  # Custom image loader with OCR
             'jpeg': self._load_image
         }
+
+    def _ensure_llm_initialized(self):
+        """Ensure LLM and embeddings are initialized (lazy loading)"""
+        if self.llm_system is None:
+            self.llm_system = OptimizedLLM(self.config)
+            self.embeddings = self.llm_system.get_embeddings()
+            
+        if self.text_splitter is None:
+            optimal = self.config.get_optimal_settings()
+            self.text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=optimal["chunk_size"],
+                chunk_overlap=self.config.CHUNK_OVERLAP,
+                length_function=len,
+                separators=["\n\n", "\n", " ", ""]
+            )
+    
+    def _get_embeddings_for_loading(self):
+        """Get embeddings for loading vector stores without requiring LLM"""
+        # Create embeddings directly without LLM for loading vector stores
+        from langchain_huggingface import HuggingFaceEmbeddings
+        from src.memory_safe_embeddings import MemorySafeEmbeddings
+        import os
+        
+        os.environ["HF_HUB_OFFLINE"] = "1"
+        os.environ["TRANSFORMERS_OFFLINE"] = "1"
+        
+        try:
+            base_embeddings = HuggingFaceEmbeddings(
+                model_name=self.config.EMBEDDING_MODEL,
+                model_kwargs={
+                    'device': 'cpu',
+                    'trust_remote_code': False,
+                    'local_files_only': True
+                },
+                encode_kwargs={'normalize_embeddings': True}
+            )
+        except Exception:
+            base_embeddings = HuggingFaceEmbeddings(
+                model_name=self.config.EMBEDDING_MODEL,
+                model_kwargs={'device': 'cpu', 'trust_remote_code': False},
+                encode_kwargs={'normalize_embeddings': True}
+            )
+        
+        return MemorySafeEmbeddings(
+            base_embeddings, 
+            batch_size=getattr(self.config, 'EMBEDDING_BATCH_SIZE', 2)
+        )
 
     def detect_file_type(self, filename: str) -> str:
         """Detect file type from filename extension"""
@@ -411,6 +449,9 @@ class DocumentProcessor:
 
     def process_file(self, file_path: str, filename: str, chunk_size: int = None, progress_callback: callable = None) -> Tuple[str, int, int, float]:
         """Process any supported file type with optional dynamic chunk size"""
+        # Ensure LLM is initialized for processing
+        self._ensure_llm_initialized()
+        
         start_time = time.time()
         
         # Check file size for incremental processing
@@ -562,11 +603,14 @@ class DocumentProcessor:
         if not validate_vector_store_path(vector_store_path, self.config.VECTOR_STORE_DIR):
             raise ValueError(f"Invalid vector store path for document ID: {document_id}")
 
+        # Use lightweight embeddings for loading (no LLM required)
+        embeddings = self._get_embeddings_for_loading()
+
         # Load with safer approach - still uses pickle internally but with validation
         # In production, consider migrating to a safer serialization format
         return FAISS.load_local(
             str(vector_store_path),
-            self.embeddings,
+            embeddings,
             allow_dangerous_deserialization=True  # Required by FAISS, but path is validated
         )
     

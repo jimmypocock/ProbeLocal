@@ -23,9 +23,8 @@ def render_url_input() -> None:
     
     # URL input with validation
     url = st.text_input(
-        "Enter URL to analyze",
+        "Enter a URL to fetch and analyze its content",
         placeholder="https://example.com/article",
-        help="Enter a URL to fetch and analyze its content"
     )
     
     if url:
@@ -83,19 +82,3 @@ def process_url(url: str) -> None:
             add_notification(f"❌ Error: {str(e)}", "error")
 
 
-def render_url_examples() -> None:
-    """Show example URLs for quick testing"""
-    st.markdown("#### 💡 Try these examples:")
-    
-    examples = [
-        ("Wikipedia Article", "https://en.wikipedia.org/wiki/Artificial_intelligence"),
-        ("News Article", "https://www.bbc.com/news"),
-        ("Documentation", "https://docs.python.org/3/tutorial/"),
-    ]
-    
-    cols = st.columns(len(examples))
-    for i, (label, url) in enumerate(examples):
-        with cols[i]:
-            if st.button(f"📄 {label}", key=f"example_url_{i}", use_container_width=True):
-                st.session_state.pending_url = url
-                st.rerun()

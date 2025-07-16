@@ -7,6 +7,9 @@ import os
 import shutil
 import logging
 import json
+import signal
+import sys
+import asyncio
 from pathlib import Path
 from typing import Dict, Any
 from contextlib import asynccontextmanager
@@ -16,7 +19,7 @@ os.environ["HF_HUB_OFFLINE"] = "1"
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
 os.environ["HF_DATASETS_OFFLINE"] = "1"
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Request
+from fastapi import FastAPI, HTTPException, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -27,9 +30,7 @@ from slowapi.errors import RateLimitExceeded
 
 from src.config import Config
 from src.document_processor import DocumentProcessor
-from src.qa_chain import QAChain
-from src.qa_chain_enhanced import EnhancedQAChain
-from src.qa_chain_streaming import StreamingQAChain
+from src.qa_chain_unified import UnifiedQAChain
 from src.performance.request_queue import request_queue, get_request_result
 from src.model_warmup import start_background_warmup
 from src.error_messages import ErrorMessages
@@ -57,9 +58,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 # Global instances
 doc_processor = None
-qa_chain = None
-enhanced_qa_chain = None
-streaming_qa_chain = None
+unified_qa_chain = None
 vector_store_manager = None
 
 class QuestionRequest(BaseModel):
@@ -82,6 +81,8 @@ class URLProcessRequest(BaseModel):
     temperature: float = 0.7
 
 class UploadResponse(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    
     document_id: str
     pages: int
     chunks: int
@@ -89,6 +90,8 @@ class UploadResponse(BaseModel):
     message: str
 
 class AnswerResponse(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    
     answer: str
     sources: list
     document_id: str
@@ -98,7 +101,7 @@ class AnswerResponse(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    global doc_processor, qa_chain, vector_store_manager
+    global doc_processor, unified_qa_chain, vector_store_manager
     logger.info("Initializing PDF Q&A system...")
     
     try:
@@ -133,7 +136,7 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down PDF Q&A system...")
     
     # Clean up global instances
-    global doc_processor, qa_chain, enhanced_qa_chain, streaming_qa_chain
+    global doc_processor, unified_qa_chain
     
     # Clean up document processor
     if doc_processor is not None:
@@ -147,29 +150,22 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"Error cleaning up document processor: {e}")
     
-    # Clean up QA chains
-    for chain_name, chain in [
-        ("qa_chain", qa_chain),
-        ("enhanced_qa_chain", enhanced_qa_chain),
-        ("streaming_qa_chain", streaming_qa_chain)
-    ]:
-        if chain is not None:
-            try:
-                logger.info(f"Cleaning up {chain_name}...")
-                # Clear any cached data
-                if hasattr(chain, 'llm'):
-                    del chain.llm
-                if hasattr(chain, 'embeddings'):
-                    del chain.embeddings
-                if hasattr(chain, 'vector_store'):
-                    del chain.vector_store
-                del chain
-            except Exception as e:
-                logger.error(f"Error cleaning up {chain_name}: {e}")
+    # Clean up direct QA chain
+    if unified_qa_chain is not None:
+        try:
+            logger.info("Cleaning up direct QA chain...")
+            # Clear any cached data
+            if hasattr(unified_qa_chain, 'llm'):
+                del unified_qa_chain.llm
+            if hasattr(unified_qa_chain, 'embeddings'):
+                del unified_qa_chain.embeddings
+            if hasattr(unified_qa_chain, 'vector_store'):
+                del unified_qa_chain.vector_store
+            del unified_qa_chain
+        except Exception as e:
+            logger.error(f"Error cleaning up direct QA chain: {e}")
     
-    qa_chain = None
-    enhanced_qa_chain = None
-    streaming_qa_chain = None
+    unified_qa_chain = None
     
     # Force garbage collection
     import gc
@@ -247,207 +243,15 @@ def get_doc_processor():
         doc_processor = DocumentProcessor()
     return doc_processor
 
-def get_qa_chain():
-    """Lazy initialization of QA chain"""
-    global qa_chain
-    if qa_chain is None:
-        logger.info("Initializing QA chain...")
-        qa_chain = QAChain()
-    return qa_chain
 
-def get_enhanced_qa_chain():
-    """Lazy initialization of enhanced QA chain with web search"""
-    global enhanced_qa_chain
-    if enhanced_qa_chain is None:
-        logger.info("Initializing enhanced QA chain with web search...")
-        enhanced_qa_chain = EnhancedQAChain()
-    return enhanced_qa_chain
+def get_unified_qa_chain():
+    """Lazy initialization of direct QA chain"""
+    global unified_qa_chain
+    if unified_qa_chain is None:
+        logger.info("Initializing direct QA chain...")
+        unified_qa_chain = UnifiedQAChain()
+    return unified_qa_chain
 
-def get_streaming_qa_chain():
-    """Lazy initialization of streaming QA chain"""
-    global streaming_qa_chain
-    if streaming_qa_chain is None:
-        logger.info("Initializing streaming QA chain...")
-        streaming_qa_chain = StreamingQAChain()
-    return streaming_qa_chain
-
-@app.post("/upload", response_model=UploadResponse)
-@limiter.limit("10/minute")  # 10 uploads per minute per IP
-async def upload_file(
-    request: Request,
-    file: UploadFile = File(...),
-    model: str = Form("mistral"),
-    chunk_size: int = Form(800),
-    temperature: float = Form(0.7)
-):
-    """Upload and process a document file with dynamic settings"""
-    
-    # Validate model name
-    if not validate_model_name(model):
-        raise HTTPException(status_code=400, detail="Invalid model name")
-    
-    # Validate and sanitize parameters
-    params = validate_parameter_bounds({
-        'chunk_size': chunk_size,
-        'temperature': temperature
-    })
-    chunk_size = params.get('chunk_size', 800)
-    temperature = params.get('temperature', 0.7)
-    
-    # Supported file extensions
-    supported_extensions = ['.pdf', '.txt', '.csv', '.md', '.docx', '.xlsx', '.png', '.jpg', '.jpeg']
-    
-    # Validate file
-    file_ext = Path(file.filename).suffix.lower()
-    if file_ext not in supported_extensions:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Unsupported file type. Supported types: {', '.join(supported_extensions)}"
-        )
-    
-    # Check file size
-    contents = await file.read()
-    file_size = len(contents)
-    
-    if file_size > config.MAX_FILE_SIZE_BYTES:
-        raise HTTPException(
-            status_code=413,
-            detail=f"File too large. Maximum size is {config.MAX_FILE_SIZE_MB}MB"
-        )
-    
-    # Sanitize filename and create safe path
-    safe_path = create_safe_file_path(file.filename, config.UPLOAD_DIR)
-    if not safe_path:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid filename. Please use only alphanumeric characters, dots, hyphens, and underscores."
-        )
-    
-    try:
-        # Write file asynchronously
-        await write_file_async(safe_path, contents, mode='wb')
-        
-        logger.info(f"Processing file: {safe_path.name} (size: {file_size / 1024 / 1024:.1f}MB)")
-        
-        # Use async processing for large files (>5MB)
-        if file_size > 5 * 1024 * 1024:  # 5MB threshold
-            from src.document_processor_async import AsyncDocumentProcessor
-            processor = get_doc_processor()
-            async_processor = AsyncDocumentProcessor(processor)
-            doc_id, pages, chunks, processing_time = await async_processor.process_file_async(
-                str(safe_path),
-                safe_path.name,
-                chunk_size=chunk_size if chunk_size != 800 else None
-            )
-        else:
-            # Use regular processing for smaller files
-            processor = get_doc_processor()
-            doc_id, pages, chunks, processing_time = processor.process_file(
-                str(safe_path),
-                safe_path.name,
-                chunk_size=chunk_size if chunk_size != 800 else None  # Only pass if different from default
-            )
-        
-        # Clean up temporary file asynchronously
-        await delete_file_async(safe_path)
-        
-        # Trigger cleanup if needed
-        if vector_store_manager and vector_store_manager.should_cleanup():
-            logger.info("Running automatic vector store cleanup...")
-            cleanup_stats = vector_store_manager.cleanup_old_stores()
-        
-        return UploadResponse(
-            document_id=doc_id,
-            pages=pages,
-            chunks=chunks,
-            processing_time=processing_time,
-            message=f"Successfully processed {pages} pages into {chunks} chunks"
-        )
-        
-    except Exception as e:
-        # Clean up on error
-        if safe_path and safe_path.exists():
-            safe_path.unlink()
-        
-        logger.error(f"Error processing file: {e}", exc_info=True)
-        # Use sanitized error message
-        error_msg = sanitize_error_message(e, show_details=False)
-        if "Ollama" in str(e):
-            error_msg = "Ollama service error. Please ensure 'ollama serve' is running and you have pulled a model with 'ollama pull mistral'"
-        raise HTTPException(status_code=500, detail=error_msg)
-
-@app.post("/upload-streaming", response_model=UploadResponse)
-@limiter.limit("5/minute")  # Fewer uploads for large files
-async def upload_file_streaming(
-    request: Request,
-    file: UploadFile = File(...),
-    model: str = Form("mistral"),
-    chunk_size: int = Form(800),
-    temperature: float = Form(0.7)
-):
-    """Upload and process a large document using streaming (for files >10MB)"""
-    
-    # Validate model name
-    if not validate_model_name(model):
-        raise HTTPException(status_code=400, detail="Invalid model name")
-    
-    # Validate parameters
-    params = validate_parameter_bounds({
-        'chunk_size': chunk_size,
-        'temperature': temperature
-    })
-    chunk_size = params.get('chunk_size', 800)
-    
-    # Check file extension
-    supported_extensions = ['.pdf', '.txt', '.csv', '.md', '.docx', '.xlsx']
-    file_ext = Path(file.filename).suffix.lower()
-    if file_ext not in supported_extensions:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported file type for streaming. Supported types: {', '.join(supported_extensions)}"
-        )
-    
-    try:
-        from src.streaming.upload import StreamingUploadHandler
-        
-        handler = StreamingUploadHandler(config)
-        
-        # Create async generator for file chunks
-        async def file_chunks():
-            while True:
-                chunk = await file.read(1024 * 1024)  # Read 1MB at a time
-                if not chunk:
-                    break
-                yield chunk
-        
-        # Process the upload stream
-        doc_id, pages, chunks, processing_time = await handler.process_upload_stream(
-            file.filename,
-            file_chunks(),
-            content_length=file.size if hasattr(file, 'size') else None,
-            chunk_size=chunk_size
-        )
-        
-        # Trigger cleanup if needed
-        if vector_store_manager and vector_store_manager.should_cleanup():
-            logger.info("Running automatic vector store cleanup...")
-            cleanup_stats = vector_store_manager.cleanup_old_stores()
-        
-        return UploadResponse(
-            document_id=doc_id,
-            pages=pages,
-            chunks=chunks,
-            processing_time=processing_time,
-            message=f"Successfully processed {pages} pages into {chunks} chunks using streaming"
-        )
-        
-    except ValueError as e:
-        # File size limit exceeded
-        raise HTTPException(status_code=413, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error in streaming upload: {e}", exc_info=True)
-        error_msg = sanitize_error_message(e, show_details=False)
-        raise HTTPException(status_code=500, detail=error_msg)
 
 @app.post("/process-url", response_model=UploadResponse)
 @limiter.limit("10/minute")  # 10 URL fetches per minute per IP
@@ -463,9 +267,6 @@ async def process_url(request: Request, url_request: URLProcessRequest):
     
     try:
         logger.info(f"Processing URL: {url_request.url}")
-        
-        # Use enhanced QA chain which has web searching capabilities
-        chain = get_enhanced_qa_chain()
         
         # Fetch and process URL content
         from src.web_search import WebSearcher
@@ -542,39 +343,26 @@ async def web_search(request: Request, question_request: QuestionRequest):
     try:
         logger.info(f"Web search: {question}")
         
-        # Check if streaming is requested
-        if question_request.stream:
-            chain = get_streaming_qa_chain()
-            generator = chain.answer_question_streaming(
-                question=question,
-                document_id="web_only",
-                use_web=True,
-                max_results=question_request.max_results or 5,
-                model_name=question_request.model_name,
-                temperature=question_request.temperature
-            )
-            
-            return StreamingResponse(
-                generator,
-                media_type="text/event-stream",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "X-Accel-Buffering": "no",
-                }
-            )
-        
-        # Non-streaming response
-        chain = get_enhanced_qa_chain()
-        result = chain.answer_question_with_web(
+        # Use direct chain with simple streaming
+        chain = get_unified_qa_chain()
+        result = chain.answer_question(
             question=question,
-            document_id="web_only",  # Special ID for web-only searches
+            document_id="web_only",
             use_web=True,
             max_results=question_request.max_results or 5,
             model_name=question_request.model_name,
-            temperature=question_request.temperature
+            temperature=question_request.temperature,
+            streaming=True
         )
         
-        return AnswerResponse(**result)
+        return StreamingResponse(
+            result['stream'],
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            }
+        )
         
     except Exception as e:
         logger.error(f"Error in web search: {e}")
@@ -606,108 +394,123 @@ async def ask_question(request: Request, question_request: QuestionRequest):
     try:
         logger.info(f"Question: {question} for document: {question_request.document_id}")
         
-        # Check if streaming is requested
-        if question_request.stream:
-            # Use streaming chain
-            chain = get_streaming_qa_chain()
-            
-            # Create streaming generator
-            generator = chain.answer_question_streaming(
-                question=question,
-                document_id=question_request.document_id,
-                use_web=question_request.use_web_search,
-                max_results=max_results,
-                model_name=question_request.model_name,
-                temperature=temperature
-            )
-            
-            # Return streaming response
-            return StreamingResponse(
-                generator,
-                media_type="text/event-stream",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "X-Accel-Buffering": "no",  # Disable proxy buffering
-                }
-            )
+        # Call directly without asyncio timeout (causes issues in threads)
+        return await _ask_question_impl(question, question_request, temperature, max_results)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing question: {e}", exc_info=True)
+        context = {'model_name': question_request.model_name}
+        error_msg = ErrorMessages.get_specific_error(e, context)
+        raise HTTPException(status_code=500, detail=error_msg)
+
+async def _ask_question_impl(question: str, question_request: QuestionRequest, temperature: float, max_results: int):
+    """Implementation of ask question with timeout protection"""
+    try:
+        # Use direct chain with simple streaming
+        chain = get_unified_qa_chain()
         
-        # Non-streaming response
-        if question_request.use_web_search:
-            chain = get_enhanced_qa_chain()
-            result = chain.answer_question_with_web(
-                question=question,
-                document_id=question_request.document_id,
-                use_web=True,
-                max_results=max_results,
-                model_name=question_request.model_name,
-                temperature=temperature
-            )
-        else:
-            chain = get_qa_chain()
-            result = chain.answer_question(
-                question=question,
-                document_id=question_request.document_id,
-                max_results=max_results,
-                model_name=question_request.model_name,
-                temperature=temperature
-            )
+        # Create streaming generator
+        result = chain.answer_question(
+            question=question,
+            document_id=question_request.document_id,
+            use_web=question_request.use_web_search,
+            max_results=max_results,
+            model_name=question_request.model_name,
+            temperature=temperature,
+            streaming=True
+        )
         
-        return AnswerResponse(**result)
+        # Return streaming response
+        return StreamingResponse(
+            result['stream'],
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",  # Disable proxy buffering
+            }
+        )
         
     except ValueError as e:
         error_msg = ErrorMessages.DOCUMENT_NOT_FOUND
         raise HTTPException(status_code=404, detail=error_msg)
-    except Exception as e:
-        logger.error(f"Error answering question: {e}")
-        context = {'model_name': question_request.model_name}
-        error_msg = ErrorMessages.get_specific_error(e, context)
-        raise HTTPException(status_code=500, detail=error_msg)
 
 @app.get("/documents")
 async def list_documents():
     """List all processed documents"""
     try:
-        documents = []
-        
-        # Get all metadata files and process them concurrently
-        from src.async_io import process_files_batch_async
-        
-        async def load_metadata(metadata_file):
-            try:
-                # Try JSON first (new format)
-                metadata = await load_json_async(metadata_file)
-                return {
-                    "document_id": metadata['document_id'],
-                    "filename": metadata['filename'],
-                    "pages": metadata['pages'],
-                    "upload_date": metadata['upload_date'],  # Already ISO format
-                    "model_used": metadata['model_used']
-                }
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                # Fallback to pickle for old files
-                import pickle
-                from src.async_io import read_file_async
-                content = await read_file_async(metadata_file, mode='rb')
-                metadata = pickle.loads(content)
-                return {
-                    "document_id": metadata['document_id'],
-                    "filename": metadata['filename'],
-                    "pages": metadata['pages'],
-                    "upload_date": metadata['upload_date'].isoformat(),
-                    "model_used": metadata['model_used']
-                }
-        
-        # Process all metadata files concurrently
-        metadata_files = list(config.VECTOR_STORE_DIR.glob("*.metadata"))
-        results = await process_files_batch_async(metadata_files, load_metadata, max_concurrent=10)
-        documents = [doc for doc in results if doc is not None]
-        
-        return {"documents": documents}
-        
+        # Call directly without asyncio timeout (causes issues in threads)
+        return await _list_documents_impl()
     except Exception as e:
         logger.error(f"Error listing documents: {e}")
         error_msg = sanitize_error_message(e, show_details=False)
         raise HTTPException(status_code=500, detail=error_msg)
+
+async def _list_documents_impl():
+    """Implementation of list documents with timeout protection"""
+    # Check for unified store first
+    unified_metadata_path = config.VECTOR_STORE_DIR / "unified_store.metadata"
+    if unified_metadata_path.exists():
+        # Load unified store metadata
+        unified_metadata = await load_json_async(unified_metadata_path)
+        
+        # Convert unified store format to document list format
+        documents = []
+        for doc in unified_metadata.get('documents', []):
+            documents.append({
+                "document_id": "unified",
+                "filename": doc['filename'],
+                "pages": doc['pages'],
+                "chunks": doc['chunks'],
+                "upload_date": unified_metadata['creation_date'],
+                "model_used": unified_metadata['model_used']
+            })
+        
+        return {"documents": documents}
+    
+    # Fallback to individual document stores
+    documents = []
+    
+    # Get all metadata files and process them concurrently
+    from src.async_io import process_files_batch_async
+    
+    async def load_metadata(metadata_file):
+        # Skip unified store metadata
+        if metadata_file.name == "unified_store.metadata":
+            return None
+            
+        try:
+            # Try JSON first (new format)
+            metadata = await load_json_async(metadata_file)
+            return {
+                "document_id": metadata['document_id'],
+                "filename": metadata['filename'],
+                "pages": metadata['pages'],
+                "chunks": metadata.get('chunks', 'N/A'),
+                "upload_date": metadata['upload_date'],  # Already ISO format
+                "model_used": metadata['model_used']
+            }
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            # Fallback to pickle for old files
+            import pickle
+            from src.async_io import read_file_async
+            content = await read_file_async(metadata_file, mode='rb')
+            metadata = pickle.loads(content)
+            return {
+                "document_id": metadata['document_id'],
+                "filename": metadata['filename'],
+                "pages": metadata['pages'],
+                "chunks": metadata.get('chunks', 'N/A'),
+                "upload_date": metadata['upload_date'].isoformat(),
+                "model_used": metadata['model_used']
+            }
+    
+    # Process all metadata files concurrently
+    metadata_files = list(config.VECTOR_STORE_DIR.glob("*.metadata"))
+    results = await process_files_batch_async(metadata_files, load_metadata, max_concurrent=10)
+    documents = [doc for doc in results if doc is not None]
+    
+    return {"documents": documents}
 
 @app.post("/ask-streaming")
 @limiter.limit("30/minute")  # Lower limit for streaming
@@ -730,25 +533,20 @@ async def ask_question_streaming(request: Request, question_request: QuestionReq
     max_results = params.get('max_results', 3)
     
     try:
-        from src.streaming.response import StreamingResponseHandler
-        
-        # Get streaming QA chain
-        chain = get_streaming_qa_chain()
-        handler = StreamingResponseHandler(chain)
-        
-        # Create streaming response
-        async def generate():
-            async for chunk in handler.stream_answer(
-                question=question,
-                document_id=question_request.document_id,
-                max_results=max_results,
-                model_name=question_request.model_name,
-                search_web=question_request.use_web_search or False
-            ):
-                yield chunk
+        # Use direct chain with simple streaming
+        chain = get_unified_qa_chain()
+        result = chain.answer_question(
+            question=question,
+            document_id=question_request.document_id,
+            use_web=question_request.use_web_search or False,
+            max_results=max_results,
+            model_name=question_request.model_name,
+            temperature=question_request.temperature or 0.7,
+            streaming=True
+        )
         
         return StreamingResponse(
-            generate(),
+            result['stream'],
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -862,14 +660,40 @@ async def cleanup_vector_stores():
         error_msg = sanitize_error_message(e, show_details=False)
         raise HTTPException(status_code=500, detail=error_msg)
 
+def signal_handler(signum, frame):
+    """Handle shutdown signals gracefully"""
+    logger.info(f"Received signal {signum}, shutting down gracefully...")
+    sys.exit(0)
+
 def start_server():
     """Start the FastAPI server"""
+    # Register signal handlers for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
+    # Get port from environment variable or default to 8080
+    port = int(os.environ.get('GREG_API_PORT', 8080))
+    logger.info(f"Starting server on port {port}")
+    
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8080,  # Changed to 8080 to avoid conflicts
-        log_level="info"
+        port=port,
+        log_level="info",
+        # Disable multiprocessing reload to avoid semaphore leaks
+        reload=False,
+        workers=1,
+        # Let uvicorn handle signals properly
+        loop="asyncio",
+        access_log=False  # Reduce log noise
     )
 
 if __name__ == "__main__":
+    # Set multiprocessing start method to avoid semaphore leaks on macOS
+    import multiprocessing
+    try:
+        multiprocessing.set_start_method('spawn', force=True)
+    except RuntimeError:
+        pass  # Already set
+    
     start_server()

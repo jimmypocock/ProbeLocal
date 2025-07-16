@@ -10,14 +10,24 @@ echo "================================"
 
 # Function to cleanup on exit
 cleanup() {
-    echo -e "\n🧹 Cleaning up..."
-    if [ -n "$API_PID" ]; then
-        kill $API_PID 2>/dev/null
+    # Only show cleanup message if we haven't already started cleaning up
+    if [ -z "$CLEANING_UP" ]; then
+        CLEANING_UP=1
+        echo -e "\n🧹 Cleaning up..."
+        
+        # Unload the model to free memory
+        echo "📦 Unloading $MODEL_TO_LOAD from memory..."
+        ollama run ${MODEL_TO_LOAD:-mistral} "" --keepalive 0 > /dev/null 2>&1 || true
+        
+        # Kill API server
+        if [ -n "$API_PID" ] && kill -0 $API_PID 2>/dev/null; then
+            kill -TERM $API_PID 2>/dev/null
+            # Give it a moment to shut down gracefully
+            wait $API_PID 2>/dev/null
+        fi
+        
+        echo "✅ Shutdown complete"
     fi
-    if [ -n "$SASS_PID" ]; then
-        kill $SASS_PID 2>/dev/null
-    fi
-    echo "✅ Shutdown complete"
     exit 0
 }
 
@@ -58,18 +68,7 @@ if ! python -c "import langchain" &> /dev/null; then
     pip install -r requirements.txt
 fi
 
-# Build CSS if needed or start SASS watcher
-if [ -f "assets/scripts/build_sass.py" ]; then
-    if [ ! -f "assets/styles/css/main.css" ]; then
-        echo "🎨 Building CSS from SASS..."
-        python assets/scripts/build_sass.py
-    fi
-    
-    # Start SASS watcher in background
-    echo "👀 Starting SASS watcher..."
-    python assets/scripts/build_sass.py --watch > logs/sass-watch.log 2>&1 &
-    SASS_PID=$!
-fi
+# CSS is now static - no build needed
 
 # Check if Ollama is running and find its port
 OLLAMA_PORT=""
@@ -139,20 +138,106 @@ if [ "$OLLAMA_PORT" == "11434" ] && ! curl -s http://localhost:11434/api/tags > 
     echo
 fi
 
+# Load environment variables to get the configured model
+if [ -f .env ]; then
+    # Parse .env file more carefully to handle comments and spaces
+    while IFS='=' read -r key value; do
+        # Skip comments and empty lines
+        if [[ ! "$key" =~ ^[[:space:]]*# ]] && [[ -n "$key" ]]; then
+            # Remove leading/trailing whitespace
+            key=$(echo "$key" | xargs)
+            value=$(echo "$value" | xargs)
+            # Remove inline comments
+            value=${value%%#*}
+            # Trim again after removing comments
+            value=$(echo "$value" | xargs)
+            # Export if valid
+            if [[ -n "$key" ]] && [[ -n "$value" ]]; then
+                export "$key=$value"
+            fi
+        fi
+    done < .env
+fi
+
+# Use configured model or default to mistral
+MODEL_TO_LOAD=${LOCAL_LLM_MODEL:-mistral}
+
 # Check if model is available
-if ! ollama list | grep -q "mistral"; then
-    echo "📥 Downloading Mistral model (this may take a few minutes)..."
-    ollama pull mistral
+if ! ollama list | grep -q "$MODEL_TO_LOAD"; then
+    echo "📥 Downloading $MODEL_TO_LOAD model (this may take a few minutes)..."
+    ollama pull $MODEL_TO_LOAD
+fi
+
+# Pre-load the model to avoid cold start on first query
+echo "🔥 Pre-loading $MODEL_TO_LOAD model into memory..."
+ollama run $MODEL_TO_LOAD "Hello" --keepalive 24h > /dev/null 2>&1 &
+echo "✅ Model $MODEL_TO_LOAD loaded and will stay in memory while app runs"
+
+# Clear vector stores BEFORE starting API
+echo "🗑️  Clearing vector stores..."
+rm -rf vector_stores/* 2>/dev/null || true
+echo "✅ Vector stores cleared"
+
+# Check if port 8080 is in use
+if lsof -ti:8080 > /dev/null 2>&1; then
+    echo "⚠️  Port 8080 is already in use by another process."
+    echo "This could be:"
+    echo "  - A previous instance of this app that didn't shut down cleanly"
+    echo "  - Another application using port 8080"
+    echo ""
+    read -p "Do you want to kill the process and continue? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "🧹 Killing process on port 8080..."
+        lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+        sleep 2
+        API_PORT=8080
+    else
+        echo "🔄 Finding alternative port..."
+        # Find next available port starting from 8081
+        API_PORT=8081
+        while lsof -ti:$API_PORT > /dev/null 2>&1; do
+            API_PORT=$((API_PORT + 1))
+            if [ $API_PORT -gt 8090 ]; then
+                echo "❌ Could not find available port between 8081-8090"
+                exit 1
+            fi
+        done
+        echo "✅ Using port $API_PORT instead"
+        # Update the port in main.py temporarily for this run
+        export GREG_API_PORT=$API_PORT
+    fi
+else
+    API_PORT=8080
 fi
 
 # Start the API server
-echo "🔧 Starting API server..."
-python main.py &
+echo "🔧 Starting API server on port $API_PORT..."
+# Use exec to replace the shell process, making signal handling cleaner
+python -u main.py &
 API_PID=$!
 
-# Wait for API to be ready
+# Wait for API to be ready before preprocessing
 echo "⏳ Waiting for API to be ready..."
-sleep 5
+for i in {1..30}; do
+    if curl -s http://localhost:$API_PORT/health > /dev/null 2>&1; then
+        echo "✅ API is ready"
+        break
+    fi
+    if [ $i -eq 30 ]; then
+        echo "❌ API failed to start. Check logs/api.log for details."
+        exit 1
+    fi
+    sleep 1
+done
+
+# Preprocess documents
+echo ""
+echo "📚 Preprocessing documents..."
+echo "================================"
+python scripts/preprocess_documents.py
+echo ""
+
 
 # Check port availability
 echo "🔍 Checking port availability..."
@@ -173,8 +258,10 @@ fi
 
 # Start Streamlit
 echo "🎨 Starting web interface..."
+
+# Run streamlit in foreground so script exits cleanly when streamlit stops
 if [ -n "$STREAMLIT_PORT" ]; then
-    streamlit run app.py --server.port $STREAMLIT_PORT
+    exec streamlit run app.py --server.port $STREAMLIT_PORT
 else
-    streamlit run app.py
+    exec streamlit run app.py
 fi

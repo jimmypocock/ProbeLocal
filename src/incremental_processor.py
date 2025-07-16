@@ -12,11 +12,12 @@ from langchain_community.document_loaders import (
     PyPDFLoader, TextLoader, CSVLoader, UnstructuredMarkdownLoader,
     Docx2txtLoader, UnstructuredExcelLoader, UnstructuredImageLoader
 )
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
 from src.config import Config
 from src.security import validate_vector_store_path
+from src.memory_safe_embeddings import MemorySafeEmbeddings
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +38,10 @@ class IncrementalProcessor:
             os.environ["TRANSFORMERS_OFFLINE"] = "1"
             
             try:
-                self.embeddings = HuggingFaceEmbeddings(
+                base_embeddings = HuggingFaceEmbeddings(
                     model_name=self.config.EMBEDDING_MODEL,
                     model_kwargs={
-                        'device': 'cpu',
+                        'device': 'cpu',  # Use CPU to avoid GPU memory issues
                         'trust_remote_code': False,
                         'local_files_only': True
                     },
@@ -49,11 +50,14 @@ class IncrementalProcessor:
             except Exception as e:
                 # Fallback without local_files_only
                 print(f"Warning: Could not load embeddings with local_files_only: {e}")
-                self.embeddings = HuggingFaceEmbeddings(
+                base_embeddings = HuggingFaceEmbeddings(
                     model_name=self.config.EMBEDDING_MODEL,
                     model_kwargs={'device': 'cpu', 'trust_remote_code': False},
                     encode_kwargs={'normalize_embeddings': True}
                 )
+            
+            # Wrap with memory-safe version
+            self.embeddings = MemorySafeEmbeddings(base_embeddings, batch_size=getattr(self.config, 'EMBEDDING_BATCH_SIZE', 2))
         
         # Processing state directory
         self.state_dir = Path("cache/processing")

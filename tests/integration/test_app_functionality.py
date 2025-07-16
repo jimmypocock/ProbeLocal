@@ -99,32 +99,6 @@ class AppFunctionalityTester:
         self.test_results["summary"]["total"] += 1
         return test_result["status"] == "passed"
         
-    def test_document_upload(self):
-        """Test document upload functionality"""
-        # Create a test file if it doesn't exist
-        test_file = self.test_files_dir / "test_document.txt"
-        if not test_file.exists():
-            test_file.parent.mkdir(exist_ok=True)
-            test_file.write_text("This is a test document for Greg AI functionality testing.\n" * 10)
-            
-        with open(test_file, 'rb') as f:
-            files = {"file": ("test_document.txt", f, "text/plain")}
-            data = {
-                "model": "mistral",
-                "chunk_size": 500,
-                "temperature": 0.7
-            }
-            
-            response = requests.post(f"{self.api_base}/upload", files=files, data=data, timeout=30)
-            
-        if response.status_code == 200:
-            result = response.json()
-            self.last_document_id = result.get("document_id")
-            self.log(f"Document uploaded: {self.last_document_id}")
-            return True
-        else:
-            self.log(f"Upload failed: {response.status_code} - {response.text}", "ERROR")
-            return False
             
     def test_document_list(self):
         """Test listing documents"""

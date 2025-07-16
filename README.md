@@ -1,6 +1,6 @@
 # Greg: Your AI Playground - Complete Guide for M3 MacBook Air
 
-**Greg is your local AI playground for experimentation and development. Currently featuring PDF question-answering with plans for expansion into multiple AI capabilities. Built for M3 MacBook Air and Apple Silicon Macs, Greg uses Ollama and open-source LLMs to provide completely local, free AI assistance. Features a clean web UI, support for multiple AI models, and optimized performance for machines with 8-24GB RAM.**
+**Greg is your local AI playground for experimentation and development. Currently featuring multi-document question-answering with unified vector storage for better cross-document queries. Built for M3 MacBook Air and Apple Silicon Macs, Greg uses Ollama and open-source LLMs to provide completely local, free AI assistance. Features a clean web UI, streaming responses, support for multiple AI models, and optimized performance for machines with 8-24GB RAM.**
 
 ## Why M3 MacBook Air is Perfect for This
 
@@ -581,8 +581,9 @@ make test-screens           # Run visual regression tests
 make test-screens-baseline  # Create baseline screenshots
 
 # Model testing
-make test-models MODELS="mistral,llama3,deepseek"
-make test-models-quick  # Quick compatibility test
+make test-models-quick         # Quick test with current documents
+make test-models MODELS="mistral"  # Test specific model
+make test-models MODELS="mistral,llama3,deepseek-llm,deepseek-coder"  # Test all
 ```
 
 ### Test Categories
@@ -631,10 +632,11 @@ make test-models-quick  # Quick compatibility test
 
 #### 7. **Model Tests** (`make test-models`)
 
-- **Purpose**: Test compatibility with different Ollama models
+- **Purpose**: Test how well models can differentiate between documents in unified store
 - **Speed**: Slow (varies by models tested)
-- **Coverage**: Model-specific behavior with various file formats
+- **Coverage**: Document differentiation, cross-document queries, model accuracy
 - **When to run**: When adding new models or changing processing logic
+- **Isolated**: Uses separate test documents folder - doesn't interfere with your data
 
 ### Test Organization
 
@@ -688,6 +690,112 @@ make test-screens
 ./venv/bin/python tests/run_tests.py --pattern "test_web_search"
 ```
 
+### Model Testing in Detail
+
+#### Available Models for Testing
+
+The test suite **automatically detects all models** installed on your computer via Ollama.
+
+**Popular Models to Install:**
+```bash
+# Models you might have or can install
+mistral         # Best balance of speed and quality (4.1GB)
+llama3          # Meta's latest model 8B (4.7GB)
+llama2          # Meta's previous model 7B/13B/70B
+deepseek-llm    # DeepSeek's language model 7B (4.0GB)
+deepseek-coder  # DeepSeek's code-focused model 6.7B (3.8GB)
+phi             # Microsoft's small model 2.7B (1.6GB)
+phi3            # Microsoft's latest small model 3.8B (2.3GB)
+codellama       # Meta's code-focused model 7B/13B/34B
+gemma           # Google's small model 2B/7B
+gemma2          # Google's latest model 9B/27B
+qwen            # Alibaba's model 0.5B/1.8B/4B/7B/14B/72B
+qwen2           # Alibaba's latest model 0.5B/1.5B/7B
+neural-chat     # Intel's optimized model 7B
+mixtral         # Mistral's MoE model 8x7B
+dolphin-mistral # Fine-tuned Mistral
+llava           # Vision-language model 7B/13B
+vicuna          # Fine-tuned LLaMA 7B/13B
+orca-mini       # Microsoft's small model 3B/7B/13B
+```
+
+To see what you have installed:
+```bash
+ollama list
+```
+
+#### Quick Model Test
+```bash
+# Test with whatever documents are currently in your app
+make test-models-quick
+```
+This runs a quick differentiation test to see if the model can distinguish between your current documents.
+
+#### Full Model Testing
+```bash
+# Test ALL models installed on your computer (automatic detection)
+make test-models
+
+# Or explicitly test all models
+make test-models MODELS="all"
+
+# Test specific models only
+make test-models MODELS="mistral"
+
+# Test multiple specific models
+make test-models MODELS="mistral,llama3"
+
+# Test whatever models you just downloaded
+make test-models MODELS="phi,codellama,gemma,qwen,neural-chat"
+```
+
+#### How Model Tests Work
+
+The model tests use a **unified document store** approach:
+1. **Isolated Environment**: Creates a separate `test_documents/` folder (doesn't touch your data)
+2. **Test Documents**: Copies test files (invoices, stories) in multiple formats (Excel, Markdown, Word)
+3. **Preprocessing**: Creates a test vector store in `test_vector_stores/`
+4. **Differentiation Testing**: Tests if models can:
+   - Find information in specific documents
+   - Not confuse similar content across documents
+   - Answer cross-document comparison questions
+   - Maintain accuracy with mixed document types
+
+#### Test Questions Include
+- "What is the invoice number in the Excel file?" (document-specific)
+- "Which invoice has the highest total amount?" (cross-document comparison)
+- "List all the invoice numbers from all documents." (aggregation)
+
+#### Installing Additional Models
+```bash
+# Download more models for testing
+ollama pull phi           # 2.7B - Very fast, good for quick tests
+ollama pull codellama      # 7B - Great for technical documents
+ollama pull gemma:2b       # 2B - Google's efficient model
+ollama pull qwen:4b        # 4B - Good multilingual support
+ollama pull neural-chat    # 7B - Intel-optimized
+
+# Then test all of them automatically
+make test-models  # Auto-detects and tests ALL installed models
+```
+
+#### Understanding Test Results
+The tests measure:
+- **Accuracy**: How often the model finds the correct information
+- **Response Time**: How fast each model responds
+- **Differentiation**: Whether the model retrieves from the correct document
+
+Example output:
+```
+Model: mistral
+  Accuracy: 81.8% (9/11 questions correct)
+  Avg Response: 3.2s
+  
+Model: llama3
+  Accuracy: 90.9% (10/11 questions correct)
+  Avg Response: 4.1s
+```
+
 ### Important Notes
 
 1. **Services**: Some tests require running services. Use `make run` first or let tests start them automatically
@@ -695,6 +803,7 @@ make test-screens
 3. **Model tests**: Require Ollama models to be downloaded first
 4. **Test data**: Located in `tests/fixtures/`
 5. **Visual tests**: Require Playwright (automatically installed when running)
+6. **Isolated testing**: Model tests use separate folders and don't interfere with your documents
 
 ### Troubleshooting Tests
 
@@ -727,27 +836,21 @@ make test-unit PYTEST_ARGS="-vvs"
 
 ## Development & Styling
 
-### CSS/SASS Build System
+### CSS System
 
-Greg uses a SASS-based styling system for maintainable, modular CSS:
+Greg uses a plain CSS approach for maintainable, minimal styling:
 
 ```bash
-# Build CSS once
-make sass
-
-# Watch for changes during development
-make sass-watch  # (automatically runs with make run)
-
-# Production build (compressed)
-make sass-compressed
+# CSS is loaded automatically when running the app
+make run
 ```
 
 ### Working with Styles
 
-- **SASS Source**: `assets/styles/scss/` - All source SASS files
-- **Compiled CSS**: `assets/styles/css/` - Auto-generated, gitignored
-- **Component styles**: Each UI component has its own SCSS file
-- **Design system**: Variables, mixins, and utilities for consistency
+- **CSS Source**: `assets/css/main.css` - Single CSS file
+- **No compilation needed**: Direct CSS editing
+- **Component styles**: All styles in one organized file
+- **Minimal approach**: Only essential styles included
 
 ### Never use inline styles in Python - Use CSS classes instead
 

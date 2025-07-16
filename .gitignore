@@ -12,8 +12,15 @@ ENV/
 # Project specific
 uploads/
 vector_stores/
+documents/
 *.faiss
 *.metadata
+
+# Test specific
+test_documents/
+test_vector_stores/
+test_results_*.json
+test_summary_*.json
 
 # IDE
 .vscode/
@@ -64,13 +71,9 @@ app_simple_delete.py
 # Cleanup script (one-time use)
 cleanup_before_push.py
 
-# Node modules (for SASS)
+# Node modules
 node_modules/
 package-lock.json
-
-# Generated CSS (built from SASS)
-assets/styles/css/
-*.css.map
 
 # Cache and runtime files
 cache/
@@ -80,6 +83,9 @@ download_embeddings.py
 performance_test.py
 test_offline_embeddings.py
 run_tests_simple.sh
+test_*.py
+debug_*.py
+SOLUTION_SUMMARY.md
 
 # CI/CD not suitable for local-only app
 .github/

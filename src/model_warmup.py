@@ -87,18 +87,15 @@ class ModelWarmup:
             return False
     
     def warmup_all_models(self) -> None:
-        """Warm up all available models in the background"""
+        """Warm up the configured model in the background"""
         def _warmup():
             try:
-                # Get list of models
-                response = requests.get("http://localhost:11434/api/tags", timeout=5)
-                if response.status_code == 200:
-                    models = response.json().get('models', [])
-                    
-                    # Warm up each model
-                    for model in models[:3]:  # Limit to first 3 to avoid too much startup delay
-                        model_name = model['name']
-                        self.warmup_model(model_name)
+                # Only warm up the configured model
+                configured_model = self.config.LOCAL_LLM_MODEL
+                logger.info(f"Warming up configured model: {configured_model}")
+                
+                # Warm up the configured model
+                self.warmup_model(configured_model)
                 
                 # Also warm up embeddings
                 self.warmup_embeddings()
