@@ -89,3 +89,6 @@ SOLUTION_SUMMARY.md
 
 # CI/CD not suitable for local-only app
 .github/
+
+# Private files
+.private/
