@@ -37,9 +37,63 @@ def process_question(question: str, document_id: str, model_name: str,
 
 
 
+def get_available_documents() -> List[Dict[str, Any]]:
+    """Fetch list of available documents from the API"""
+    try:
+        response = requests.get("http://localhost:8080/documents", timeout=5)
+        if response.status_code == 200:
+            return response.json().get('documents', [])
+    except:
+        pass
+    return []
+
+
 def handle_chat_input(chat_container, doc_name: str) -> None:
     """Handle chat input and process user questions"""
-    prompt = st.chat_input(f"Ask about {doc_name}...")
+    # Get available documents for selection
+    documents = get_available_documents()
+    
+    # Document selector (only show if documents exist and not in web-only mode)
+    selected_docs = None
+    if documents and not (st.session_state.get('use_web_search', False) and len(documents) == 0):
+        # Create document options with icons
+        icons = {
+            'pdf': '📕', 'txt': '📄', 'csv': '📊', 'md': '📝',
+            'docx': '📘', 'xlsx': '📈', 'png': '🖼️', 'jpg': '🖼️', 'jpeg': '🖼️'
+        }
+        
+        doc_options = []
+        doc_map = {}  # Map display name to document
+        
+        for doc in documents:
+            file_ext = doc['filename'].split('.')[-1].lower()
+            icon = icons.get(file_ext, '📄')
+            display_name = f"{icon} {doc['filename']}"
+            doc_options.append(display_name)
+            doc_map[display_name] = doc['filename']
+        
+        # Multiselect for document selection
+        selected_display_names = st.multiselect(
+            "Select documents to reference (leave empty to search all):",
+            options=doc_options,
+            default=[],  # Start with no selection (search all)
+            key="document_selector",
+            help="Choose specific documents to search within, or leave empty to search all documents"
+        )
+        
+        # Convert display names back to filenames
+        selected_docs = [doc_map[name] for name in selected_display_names] if selected_display_names else None
+    
+    # Update the prompt placeholder based on selection
+    if selected_docs:
+        if len(selected_docs) == 1:
+            prompt_text = f"Ask about {selected_docs[0]}..."
+        else:
+            prompt_text = f"Ask about {len(selected_docs)} selected documents..."
+    else:
+        prompt_text = f"Ask about {doc_name}..."
+    
+    prompt = st.chat_input(prompt_text)
 
     if prompt:
         # Add user message to state and display immediately
@@ -66,8 +120,17 @@ def handle_chat_input(chat_container, doc_name: str) -> None:
                 # Always use "unified" document_id for documents
                 document_id = "unified" if not st.session_state.get('use_web_search', False) else "web_only"
                 
+                # Enhance prompt with selected documents context
+                enhanced_prompt = prompt
+                if selected_docs:
+                    if len(selected_docs) == 1:
+                        enhanced_prompt = f"Please answer this question using only information from {selected_docs[0]}: {prompt}"
+                    else:
+                        docs_list = ", ".join(selected_docs[:-1]) + f" and {selected_docs[-1]}"
+                        enhanced_prompt = f"Please answer this question using only information from these documents: {docs_list}. Question: {prompt}"
+                
                 result = process_question(
-                    prompt,
+                    enhanced_prompt,
                     document_id,
                     st.session_state.current_model,
                     st.session_state.max_results,
@@ -90,7 +153,7 @@ def handle_chat_input(chat_container, doc_name: str) -> None:
                         operation_key=f"chat_query_{prompt[:20]}",
                         operation=process_question,
                         operation_args={
-                            'question': prompt,
+                            'question': enhanced_prompt,  # Use enhanced prompt for retry
                             'document_id': document_id,
                             'model_name': st.session_state.current_model,
                             'max_results': st.session_state.max_results,

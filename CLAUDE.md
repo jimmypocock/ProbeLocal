@@ -140,9 +140,18 @@ make test-models-quick # Quick compatibility test
 ### Data Flow
 1. Documents placed in `/documents` folder
 2. On startup: preprocessing script → FastAPI → unified document processor → chunks → embeddings → single FAISS vector store
-3. User queries → UnifiedQAChain routes query → FAISS similarity search → context retrieval → Ollama LLM → streaming response
+3. User queries → Query classification (6 intent types) → UnifiedQAChain routes query → FAISS similarity search → context retrieval → Ollama LLM → streaming response
 4. Web search queries → Direct to LLM with web context
 5. All documents stored in single vector store with source metadata for proper attribution
+
+### Query Classification System
+The app uses intelligent pattern-based classification to route queries:
+- **DOCUMENT_QUESTION**: Default for document queries (strong keyword support)
+- **ANALYSIS_REQUEST**: Compare, summarize, analyze (specialized prompts)
+- **DATA_EXTRACTION**: Extract specific data (structured output)
+- **COMPUTATION**: Math and calculations (step-by-step, low temperature)
+- **CASUAL_CHAT**: Greetings (skips document loading, 90% faster)
+- **WEB_SEARCH**: Current events (searches web instead of documents)
 
 ### File Structure
 ```
@@ -178,6 +187,7 @@ make test-models-quick # Quick compatibility test
 - `src/unified_document_processor.py`: Unified multi-document processing into single vector store
 - `src/qa_chain_unified.py`: Unified QA chain with intelligent routing and streaming
 - `src/ui/components.py`: Reusable Streamlit components
+- `src/ui/chat_interface.py`: Chat UI with document selection and web search toggle
 - `src/ui/lazy_loading.py`: Document list with pagination
 - `src/ui/drag_drop.py`: Custom drag & drop file upload with hidden Streamlit uploader
 - `src/ui/style_loader.py`: CSS loading utility
@@ -190,6 +200,7 @@ Streamlit session state is initialized in `app.py` and `src/ui/components.py`:
 - Messages, document IDs, notifications
 - Model selection, settings
 - Auto-saves important state changes
+- Document selection for focused queries
 
 ### Vector Store Persistence
 - Single unified store saved in `vector_stores/unified_store.faiss`

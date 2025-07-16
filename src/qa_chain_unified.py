@@ -22,11 +22,12 @@ import os
 
 class QueryIntent(Enum):
     """Query intent classification"""
-    DOCUMENT_QUESTION = "document_question"
-    CASUAL_CHAT = "casual_chat"
-    CLARIFICATION = "clarification"
-    WEB_SEARCH = "web_search"
-    AMBIGUOUS = "ambiguous"
+    DOCUMENT_QUESTION = "document_question"  # Questions about document content
+    ANALYSIS_REQUEST = "analysis_request"    # Compare, summarize, analyze documents
+    DATA_EXTRACTION = "data_extraction"      # Extract specific data from documents
+    COMPUTATION = "computation"              # Math, calculations, counting
+    CASUAL_CHAT = "casual_chat"              # Greetings and general conversation
+    WEB_SEARCH = "web_search"                # Current info, news, real-time data
 
 
 class UnifiedQAChain:
@@ -48,15 +49,41 @@ class UnifiedQAChain:
             "goodbye", "how's it going", "how's your day", "nice to meet"
         ]
         
+        # Single keywords that strongly indicate document questions
+        self.strong_document_keywords = [
+            "invoice", "report", "pdf", "document", "file", "contract", 
+            "receipt", "statement", "letter", "memo", "spreadsheet"
+        ]
+        
         self.document_patterns = [
-            "document", "file", "pdf", "csv", "spreadsheet", "invoice", "total",
-            "amount", "page", "section", "paragraph", "quote", "extract", "find",
-            "search", "what does", "according to", "in the", "show me"
+            "page", "section", "paragraph", "quote", "find",
+            "search", "what does", "according to", "in the", "show me",
+            "tell me about", "where in", "which document"
+        ]
+        
+        self.analysis_patterns = [
+            "compare", "difference", "summarize", "summary", "analyze",
+            "analysis", "overview", "review", "explain the", "breakdown",
+            "contrast", "similarities", "main points", "key takeaways"
+        ]
+        
+        self.extraction_patterns = [
+            "extract", "list all", "find all", "get all", "pull out",
+            "all the", "every", "compile", "gather", "collect",
+            "dates", "names", "numbers", "amounts", "values"
+        ]
+        
+        self.computation_patterns = [
+            "calculate", "compute", "sum", "total", "add up", "count",
+            "average", "mean", "percentage", "percent", "multiply",
+            "divide", "subtract", "how much", "how many", "what's the total",
+            "add", "math", "arithmetic", "plus", "minus"
         ]
         
         self.web_patterns = [
-            "weather", "news", "current", "today", "latest", "stock", "price",
-            "real-time", "live", "update", "happening now"
+            "weather", "news", "current", "today", "today's", "latest", 
+            "stock", "price", "real-time", "live", "update", "happening now",
+            "right now", "at the moment", "currently"
         ]
         
         # Initialize model parameters
@@ -114,85 +141,67 @@ class UnifiedQAChain:
     
     def classify_query_intent(
         self,
-        question: str,
-        use_llm: bool = False
+        question: str
     ) -> Tuple[QueryIntent, float]:
         """
-        Classify the intent of a query
+        Classify the intent of a query using pattern matching
         
         Args:
             question: The user's question
-            use_llm: Whether to use LLM for classification (slower but more accurate)
             
         Returns:
             Tuple of (intent, confidence)
         """
         question_lower = question.lower().strip()
         
-        # Quick pattern-based classification first
-        # Check for casual conversation
+        # Check for casual conversation first (highest priority for greetings)
         if any(pattern in question_lower for pattern in self.casual_patterns):
             if len(question_lower.split()) < 10:  # Short casual queries
                 return QueryIntent.CASUAL_CHAT, 0.9
         
-        # Check for document-related queries
-        doc_score = sum(1 for pattern in self.document_patterns if pattern in question_lower)
-        if doc_score >= 2:
+        # Check for web search patterns (time-sensitive queries)
+        if any(pattern in question_lower for pattern in self.web_patterns):
+            return QueryIntent.WEB_SEARCH, 0.9
+        
+        # Check for computation/math BEFORE analysis and extraction to avoid conflicts
+        # Use word boundary checking for computation to avoid false matches like "sum" in "summarize"
+        import re
+        for pattern in self.computation_patterns:
+            # For short patterns like "sum", "add", check word boundaries
+            if len(pattern) <= 4:
+                if re.search(r'\b' + re.escape(pattern) + r'\b', question_lower):
+                    return QueryIntent.COMPUTATION, 0.8
+            else:
+                # For longer patterns, use simple substring matching
+                if pattern in question_lower:
+                    return QueryIntent.COMPUTATION, 0.8
+        
+        # Check for analysis requests
+        if any(pattern in question_lower for pattern in self.analysis_patterns):
+            return QueryIntent.ANALYSIS_REQUEST, 0.8
+        
+        # Check for data extraction
+        if any(pattern in question_lower for pattern in self.extraction_patterns):
+            return QueryIntent.DATA_EXTRACTION, 0.8
+        
+        # Check for strong document keywords (single keyword is enough!)
+        if any(keyword in question_lower for keyword in self.strong_document_keywords):
             return QueryIntent.DOCUMENT_QUESTION, 0.8
         
-        # Check for web search needs
-        if any(pattern in question_lower for pattern in self.web_patterns):
-            return QueryIntent.WEB_SEARCH, 0.7
+        # Check for document patterns (weaker indicators)
+        doc_score = sum(1 for pattern in self.document_patterns if pattern in question_lower)
+        if doc_score >= 1:  # Reduced from 2 to 1
+            return QueryIntent.DOCUMENT_QUESTION, 0.7
         
-        # If pattern matching is inconclusive and LLM classification is enabled
-        if use_llm and doc_score == 0:
-            return self._classify_with_llm(question)
+        # Check if it's a question about something (likely document-related)
+        question_words = ["what", "where", "when", "how", "who", "which", "why"]
+        if any(question_lower.startswith(word) for word in question_words):
+            # If no web indicators, assume document question
+            if not any(pattern in question_lower for pattern in self.web_patterns):
+                return QueryIntent.DOCUMENT_QUESTION, 0.6
         
-        # Default to document question with low confidence
+        # Default to document question with medium confidence
         return QueryIntent.DOCUMENT_QUESTION, 0.5
-    
-    def _classify_with_llm(self, question: str) -> Tuple[QueryIntent, float]:
-        """Use a small LLM to classify the query intent"""
-        try:
-            classifier_llm = Ollama(
-                model="mistral",
-                temperature=0.1,
-                num_ctx=512
-            )
-            
-            classification_prompt = f"""Classify this query into ONE category:
-1. DOCUMENT_QUESTION - Questions about specific documents, files, or their contents
-2. CASUAL_CHAT - Greetings, small talk, general conversation
-3. WEB_SEARCH - Questions requiring current information, news, or web data
-4. CLARIFICATION - Unclear questions that need more context
-
-Query: "{question}"
-
-Respond with ONLY the category name and confidence (0-1), like: CASUAL_CHAT 0.9
-
-Classification:"""
-            
-            response = classifier_llm.invoke(classification_prompt).strip()
-            
-            parts = response.split()
-            if len(parts) >= 2:
-                intent_str = parts[0].upper()
-                confidence = float(parts[1])
-                
-                intent_map = {
-                    "DOCUMENT_QUESTION": QueryIntent.DOCUMENT_QUESTION,
-                    "CASUAL_CHAT": QueryIntent.CASUAL_CHAT,
-                    "WEB_SEARCH": QueryIntent.WEB_SEARCH,
-                    "CLARIFICATION": QueryIntent.CLARIFICATION
-                }
-                
-                intent = intent_map.get(intent_str, QueryIntent.AMBIGUOUS)
-                return intent, confidence
-                
-        except Exception as e:
-            print(f"LLM classification failed: {e}")
-        
-        return QueryIntent.AMBIGUOUS, 0.3
     
     def answer_question(
         self,
@@ -222,19 +231,32 @@ Classification:"""
         start_time = time.time()
         
         # Classify the query intent
-        intent, confidence = self.classify_query_intent(question, use_llm=False)
+        intent, confidence = self.classify_query_intent(question)
         print(f"Query classified as: {intent.value} (confidence: {confidence})")
         
-        # Route based on intent
-        if intent == QueryIntent.CASUAL_CHAT and confidence > 0.7:
+        # Route based on intent - NO document loading for casual chat!
+        if intent == QueryIntent.CASUAL_CHAT and confidence > 0.6:
             result = self._handle_casual_chat(
                 question, model_name, temperature, start_time
             )
-        elif intent == QueryIntent.WEB_SEARCH or (use_web and confidence < 0.5):
+        elif intent == QueryIntent.WEB_SEARCH:
             result = self._handle_web_search(
                 question, max_results, model_name, temperature, start_time
             )
+        elif intent == QueryIntent.ANALYSIS_REQUEST:
+            result = self._handle_analysis_request(
+                question, document_id, model_name, temperature, start_time
+            )
+        elif intent == QueryIntent.DATA_EXTRACTION:
+            result = self._handle_data_extraction(
+                question, document_id, model_name, temperature, start_time
+            )
+        elif intent == QueryIntent.COMPUTATION:
+            result = self._handle_computation(
+                question, document_id, model_name, temperature, start_time
+            )
         else:
+            # DOCUMENT_QUESTION or low confidence queries
             result = self._handle_document_question(
                 question, document_id, use_web, max_results, 
                 model_name, temperature, start_time, intent, confidence
@@ -320,6 +342,56 @@ Answer based on the web search results above:"""
             'used_web_search': True
         }
     
+    def _handle_analysis_request(
+        self,
+        question: str,
+        document_id: str,
+        model_name: str,
+        temperature: float,
+        start_time: float
+    ) -> Dict[str, Any]:
+        """Handle document analysis requests (compare, summarize, analyze)"""
+        # For now, route to document handler with specialized prompt
+        # TODO: In future, could retrieve multiple documents for comparison
+        return self._handle_document_question(
+            question, document_id, False, 10,  # More context for analysis
+            model_name, temperature, start_time, 
+            QueryIntent.ANALYSIS_REQUEST, 0.8
+        )
+    
+    def _handle_data_extraction(
+        self,
+        question: str,
+        document_id: str,
+        model_name: str,
+        temperature: float,
+        start_time: float
+    ) -> Dict[str, Any]:
+        """Handle data extraction requests (extract all dates, names, etc.)"""
+        # For now, route to document handler with specialized prompt
+        # TODO: In future, could use structured output format
+        return self._handle_document_question(
+            question, document_id, False, 15,  # More results for extraction
+            model_name, temperature if temperature is not None else 0.3,  # Lower temp for accuracy
+            start_time, QueryIntent.DATA_EXTRACTION, 0.8
+        )
+    
+    def _handle_computation(
+        self,
+        question: str,
+        document_id: str,
+        model_name: str,
+        temperature: float,
+        start_time: float
+    ) -> Dict[str, Any]:
+        """Handle computation/math requests (calculate, sum, count, etc.)"""
+        # Route to document handler with specialized prompt and lower temperature for accuracy
+        return self._handle_document_question(
+            question, document_id, False, 10,  # Focused results for computation
+            model_name, temperature if temperature is not None else 0.2,  # Very low temp for accuracy
+            start_time, QueryIntent.COMPUTATION, 0.8
+        )
+    
     def _handle_document_question(
         self,
         question: str,
@@ -402,7 +474,62 @@ Answer based on the web search results above:"""
                 pages = doc.get('pages', 'unknown')
                 doc_list += f"- {doc['filename']} ({file_type}, {pages} page{'s' if pages != 1 else ''})\n"
         
-        if confidence < 0.6:
+        # Create specialized prompts based on intent
+        if intent == QueryIntent.ANALYSIS_REQUEST:
+            template = f"""You are a helpful AI assistant specialized in document analysis.{doc_list}
+
+Context from documents:
+{{context}}
+
+Question: {{question}}
+
+Instructions:
+- Provide a comprehensive analysis based on the context
+- For comparisons, highlight key differences and similarities
+- For summaries, extract main points and key insights
+- Structure your response clearly with sections if appropriate
+- Cite specific parts of the documents when making points
+
+Answer:"""
+        
+        elif intent == QueryIntent.DATA_EXTRACTION:
+            template = f"""You are a helpful AI assistant specialized in data extraction.{doc_list}
+
+Context from documents:
+{{context}}
+
+Question: {{question}}
+
+Instructions:
+- Extract ALL requested data from the context
+- Present the data in a clear, structured format
+- Use bullet points or numbered lists when appropriate
+- Be comprehensive - don't miss any instances
+- If no data is found, state that clearly
+- Only extract what's explicitly in the context
+
+Answer:"""
+        
+        elif intent == QueryIntent.COMPUTATION:
+            template = f"""You are a helpful AI assistant specialized in mathematical computation and calculations.{doc_list}
+
+Context from documents:
+{{context}}
+
+Question: {{question}}
+
+Instructions:
+- Identify all relevant numbers and values in the context
+- Perform the requested calculation step by step
+- Show your work clearly (e.g., "25 + 30 = 55")
+- If multiple calculations are needed, break them down
+- If information is missing for the calculation, state what's needed
+- Double-check your arithmetic before providing the final answer
+- Only use numbers that are explicitly stated in the context
+
+Answer:"""
+        
+        elif confidence < 0.6:
             template = f"""You are a helpful AI assistant.{doc_list}
 
 Context (may or may not be relevant):
@@ -417,6 +544,7 @@ Instructions:
 
 Answer:"""
         else:
+            # Default for DOCUMENT_QUESTION with good confidence
             template = f"""You are a helpful AI assistant analyzing documents.{doc_list}
 
 Context from documents:

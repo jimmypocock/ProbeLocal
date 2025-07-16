@@ -1,6 +1,6 @@
 # Greg: Your AI Playground - Complete Guide for M3 MacBook Air
 
-**Greg is your local AI playground for experimentation and development. Currently featuring multi-document question-answering with unified vector storage for better cross-document queries. Built for M3 MacBook Air and Apple Silicon Macs, Greg uses Ollama and open-source LLMs to provide completely local, free AI assistance. Features a clean web UI, streaming responses, support for multiple AI models, and optimized performance for machines with 8-24GB RAM.**
+**Greg is your local AI playground for experimentation and development. Currently featuring multi-document question-answering with unified vector storage for better cross-document queries. Built for M3 MacBook Air and Apple Silicon Macs, Greg uses Ollama and open-source LLMs to provide completely local, free AI assistance. Features a clean web UI, streaming responses, support for multiple AI models, intelligent query classification with specialized prompts, document selection UI, and optimized performance for machines with 8-24GB RAM.**
 
 ## Why M3 MacBook Air is Perfect for This
 
@@ -424,6 +424,44 @@ CHUNK_SIZE=800
 - OpenAI API: ~$50-200/month
 - AWS Deployment: ~$100-500/month
 - Your M3 Setup: $0/month + electricity (~$2/month)
+
+## Query Intelligence
+
+Greg includes an intelligent query classification system that automatically routes your questions for optimal processing:
+
+### Query Types & Specialized Handling
+
+1. **Document Questions** - Questions about your uploaded documents
+   - Searches relevant chunks from documents
+   - High confidence for keywords like "invoice", "report", "contract"
+
+2. **Analysis Requests** - Compare, summarize, or analyze documents
+   - Gets specialized prompts for comprehensive analysis
+   - Keywords: "compare", "summarize", "analyze", "difference"
+
+3. **Data Extraction** - Extract specific data from documents
+   - Structured output with bullet points or lists
+   - Keywords: "extract", "list all", "find all", "get all"
+
+4. **Computation** - Math, calculations, counting
+   - Step-by-step calculation prompts
+   - Lower temperature (0.2) for accuracy
+   - Keywords: "calculate", "sum", "total", "average", "count"
+
+5. **Casual Chat** - Greetings and general conversation
+   - Skips document loading for 90% faster responses
+   - No context retrieval needed
+
+6. **Web Search** - Current events, news, real-time data
+   - Searches the web instead of documents
+   - Keywords: "weather", "news", "today's", "latest", "current"
+
+### Document Selection
+
+You can now select specific documents to focus your queries:
+- Use the multiselect widget to choose documents
+- Questions will be answered using only selected documents
+- Great for comparing specific files or focusing on particular sources
 
 ## Limitations
 

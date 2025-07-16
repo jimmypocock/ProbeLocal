@@ -298,4 +298,31 @@
 
 ---
 
-*Last Updated: 2025-07-08*
+### Query Classification System (2025-07-16)
+
+#### Classification Improvements ✅ COMPLETE
+
+- [x] **Removed Dead Categories**
+  - [x] Removed unused CLARIFICATION and AMBIGUOUS categories
+  - [x] Removed unused LLM classification code (45 lines)
+  - [x] Simplified classification interface
+- [x] **Added New Intent Categories**
+  - [x] ANALYSIS_REQUEST - Compare, summarize, analyze documents
+  - [x] DATA_EXTRACTION - Extract specific data from documents
+  - [x] COMPUTATION - Math, calculations, counting queries
+  - [x] Each category gets specialized prompt templates
+- [x] **Improved Pattern Matching**
+  - [x] Single keywords now get high confidence (e.g., "invoice" → 0.8)
+  - [x] Added strong_document_keywords list
+  - [x] Fixed pattern conflicts by reordering checks
+  - [x] Computation accuracy improved from 84.6% to 92.3%
+- [x] **UI Enhancement**
+  - [x] Added document selection multiselect widget
+  - [x] Users can focus queries on specific documents
+  - [x] Document filtering via prompt engineering
+- [x] **Documentation**
+  - [x] Updated AI_MODEL_INPUT_DOCUMENTATION.md
+  - [x] Updated QUERY_CLASSIFICATION_ANALYSIS.md
+  - [x] Added low-priority TODOs with clear context
+
+*Last Updated: 2025-07-16*
