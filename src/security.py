@@ -24,7 +24,8 @@ ALLOWED_MODELS = {
     'llama2', 'llama2:latest', 'llama2:7b', 'llama2:13b',
     'llama3', 'llama3:latest', 'llama3:8b', 'llama3:70b',
     'phi', 'phi:latest', 'phi3', 'phi3:latest',
-    'deepseek-coder', 'deepseek-coder:latest',
+    'deepseek-coder', 'deepseek-coder:latest', 'deepseek-coder:6.7b-instruct',
+    'deepseek-llm', 'deepseek-llm:latest', 'deepseek-llm:7b-chat',
     'neural-chat', 'neural-chat:latest',
     'dolphin-mistral', 'dolphin-mistral:latest',
     'mixtral', 'mixtral:latest'

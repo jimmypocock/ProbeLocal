@@ -55,7 +55,8 @@ def handle_streaming_chat(
         "max_results": max_results,
         "model_name": model_name,
         "temperature": temperature,
-        "use_web_search": use_web_search
+        "use_web_search": use_web_search,
+        "stream": True  # Explicitly enable streaming
     }
     
     # Create placeholder if not provided

@@ -34,112 +34,22 @@ class StreamingResponseHandler:
         """Stream the answer to a question
         
         Yields:
-            JSON-encoded chunks of the response
+            Server-Sent Events formatted chunks
         """
         try:
-            # Start with metadata
-            yield json.dumps({
-                "type": "metadata",
-                "timestamp": datetime.now().isoformat(),
-                "model": model_name or "default",
-                "document_id": document_id,
-                "search_web": search_web
-            }) + "\n"
-            
-            if search_web:
-                # Stream web search results
-                searcher = WebSearcher()
+            # Use the QA chain's streaming method
+            async for chunk in self.qa_chain.answer_question_streaming_async(
+                question=question,
+                document_id=document_id or "web_only" if search_web else None,
+                use_web=search_web,
+                max_results=max_results,
+                model_name=model_name
+            ):
+                yield chunk
                 
-                # Send search status
-                yield json.dumps({
-                    "type": "status",
-                    "message": "Searching the web..."
-                }) + "\n"
-                
-                # Perform search
-                search_results = await asyncio.get_event_loop().run_in_executor(
-                    None,
-                    searcher.search,
-                    question,
-                    5  # num_results
-                )
-                
-                # Send search results
-                yield json.dumps({
-                    "type": "search_results",
-                    "results": search_results[:3]  # Limit to top 3
-                }) + "\n"
-                
-                # Generate answer based on search results
-                context = "\n\n".join([
-                    f"Source: {r['url']}\n{r['content'][:500]}"
-                    for r in search_results[:3]
-                ])
-                
-                # Stream the answer generation
-                async for chunk in self._stream_llm_response(question, context, model_name):
-                    yield json.dumps({
-                        "type": "answer_chunk",
-                        "content": chunk
-                    }) + "\n"
-            else:
-                # Regular document-based Q&A
-                if not document_id:
-                    yield json.dumps({
-                        "type": "error",
-                        "message": "No document ID provided"
-                    }) + "\n"
-                    return
-                
-                # Send status
-                yield json.dumps({
-                    "type": "status",
-                    "message": "Searching document..."
-                }) + "\n"
-                
-                # Get context from vector store
-                context_docs = await asyncio.get_event_loop().run_in_executor(
-                    None,
-                    self.qa_chain._get_context,
-                    question,
-                    document_id,
-                    max_results
-                )
-                
-                if not context_docs:
-                    yield json.dumps({
-                        "type": "answer",
-                        "content": "I couldn't find relevant information in the document."
-                    }) + "\n"
-                    return
-                
-                # Send context preview
-                yield json.dumps({
-                    "type": "context",
-                    "num_chunks": len(context_docs),
-                    "preview": context_docs[0][:200] + "..." if context_docs else ""
-                }) + "\n"
-                
-                # Stream the answer
-                context = "\n\n".join(context_docs)
-                async for chunk in self._stream_llm_response(question, context, model_name):
-                    yield json.dumps({
-                        "type": "answer_chunk",
-                        "content": chunk
-                    }) + "\n"
-            
-            # Send completion signal
-            yield json.dumps({
-                "type": "complete",
-                "timestamp": datetime.now().isoformat()
-            }) + "\n"
-            
         except Exception as e:
             logger.error(f"Error in streaming response: {e}")
-            yield json.dumps({
-                "type": "error",
-                "message": str(e)
-            }) + "\n"
+            yield f"data: {json.dumps({'error': str(e), 'done': True})}\n\n"
     
     async def _stream_llm_response(
         self,

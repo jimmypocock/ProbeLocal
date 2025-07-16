@@ -7,6 +7,7 @@ from langchain_community.llms import Ollama as LangchainOllama
 from langchain_huggingface import HuggingFaceEmbeddings
 from src.config import Config
 import torch
+from src.memory_safe_embeddings import MemorySafeEmbeddings
 
 class OptimizedLLM:
     def __init__(self, config: Config, model_name: Optional[str] = None):
@@ -43,7 +44,7 @@ class OptimizedLLM:
 
     def setup_environment(self):
         """Optimize for Apple Silicon"""
-        # Use Metal Performance Shaders for acceleration
+        # Enable MPS fallback but use CPU for embeddings to avoid memory issues
         os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
         # Set thread count for optimal performance
@@ -110,20 +111,29 @@ class OptimizedLLM:
             available_models = [m['name'] for m in ollama.list()['models']]
             if not any(model in m for m in available_models):
                 # Don't automatically pull models - use default instead
-                print(f"Model {model} not found. Falling back to mistral...")
-                model = "mistral"
+                print(f"Model {model} not found. Falling back to llama3...")
+                model = "llama3"
                 
-                # Check if mistral is available
-                if not any("mistral" in m for m in available_models):
-                    raise Exception(
-                        f"No models found. Please run: ollama pull mistral"
-                    )
+                # Check if llama3 is available
+                if not any("llama3" in m for m in available_models):
+                    # Try mistral as last resort
+                    if any("mistral" in m for m in available_models):
+                        print("llama3 not found, using mistral instead...")
+                        model = "mistral"
+                    else:
+                        raise Exception(
+                            f"No models found. Please run: ollama pull llama3"
+                        )
         except Exception as e:
             print(f"Error checking models: {e}")
             model = self.config.LOCAL_LLM_MODEL
 
         # Get model-specific parameters
         model_params = self._get_model_parameters(model)
+        
+        # Add keep_alive to keep model loaded in memory
+        # Use 24h to keep model loaded for entire app session
+        model_params['keep_alive'] = '24h'  # Keep model in memory for 24 hours
         
         # Log the parameters being used
         print(f"Initializing {model} with parameters: {model_params}")
@@ -149,7 +159,7 @@ class OptimizedLLM:
             )
 
     def _initialize_embeddings(self):
-        """Initialize local embeddings optimized for M3"""
+        """Initialize local embeddings optimized for M3 with memory safety"""
         # Suppress tokenization warnings
         import warnings
         with warnings.catch_warnings():
@@ -158,34 +168,36 @@ class OptimizedLLM:
             # Use sentence-transformers with Apple Silicon optimization
             # Set local_files_only in model_kwargs to prevent HTTP requests
             try:
-                embeddings = HuggingFaceEmbeddings(
+                base_embeddings = HuggingFaceEmbeddings(
                     model_name=self.config.EMBEDDING_MODEL,
                     model_kwargs={
-                        'device': 'mps' if torch.backends.mps.is_available() else 'cpu',
+                        'device': 'cpu',  # Force CPU to avoid GPU memory issues
                         'trust_remote_code': False,  # Disable automatic model updates
                         'local_files_only': True  # Force using local cache only
                     },
                     encode_kwargs={
                         'normalize_embeddings': True,
-                        'batch_size': self.config.BATCH_SIZE
+                        'batch_size': getattr(self.config, 'EMBEDDING_BATCH_SIZE', 2)
                     }
                 )
-                return embeddings
+                # Wrap with memory-safe version
+                return MemorySafeEmbeddings(base_embeddings, batch_size=getattr(self.config, 'EMBEDDING_BATCH_SIZE', 2))
             except Exception as e:
                 # If local_files_only fails, try without it but with offline mode
                 print(f"Warning: Could not load embeddings with local_files_only: {e}")
-                return HuggingFaceEmbeddings(
+                base_embeddings = HuggingFaceEmbeddings(
                     model_name=self.config.EMBEDDING_MODEL,
                     model_kwargs={
-                        'device': 'mps' if torch.backends.mps.is_available() else 'cpu',
+                        'device': 'cpu',  # Force CPU to avoid GPU memory issues
                         'trust_remote_code': False
                     },
                     encode_kwargs={
                         'normalize_embeddings': True,
-                        'batch_size': self.config.BATCH_SIZE
+                        'batch_size': getattr(self.config, 'EMBEDDING_BATCH_SIZE', 2)
                     }
                 )
-
+                # Wrap with memory-safe version
+                return MemorySafeEmbeddings(base_embeddings, batch_size=getattr(self.config, 'EMBEDDING_BATCH_SIZE', 2))
     def get_llm(self):
         return self.llm
 

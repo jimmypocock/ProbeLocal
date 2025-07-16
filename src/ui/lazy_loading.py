@@ -33,13 +33,7 @@ class LazyDocumentList:
         end_idx = min(start_idx + self.items_per_page, total_docs)
         page_docs = documents[start_idx:end_idx]
         
-        # Render header with count
-        st.markdown(f"""
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span class="doc-list-header">📚 Documents ({total_docs})</span>
-            <span class="doc-list-pagination">Page {current_page + 1} of {total_pages}</span>
-        </div>
-        """, unsafe_allow_html=True)
+        # No header needed since count is in the main sidebar header
         
         # Render documents
         for doc in page_docs:
@@ -84,16 +78,19 @@ class LazyDocumentList:
                 </div>
                 """, unsafe_allow_html=True)
             else:
+                # Create a clean button with simple key
+                button_label = f"{doc['filename'][:40]}{'...' if len(doc['filename']) > 40 else ''}"
                 if st.button(
-                    f"{doc['filename'][:40]}{'...' if len(doc['filename']) > 40 else ''}",
+                    button_label,
                     key=f"select_{doc_id}",
-                    use_container_width=True
+                    use_container_width=True,
+                    help=f"Click to select {doc['filename']}"
                 ):
                     on_select(doc_id)
         
         with col3:
-            # Delete button
-            if st.button("🗑️", key=f"delete_{doc_id}", help="Delete document"):
+            # Delete button with simple key
+            if st.button("🗑️", key=f"lazy_delete_{doc_id}", help="Delete document"):
                 on_delete(doc_id)
     
     def _render_pagination(self, current_page: int, total_pages: int) -> None:

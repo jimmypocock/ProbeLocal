@@ -11,7 +11,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.streaming.handler import StreamingResponseHandler, create_streaming_response
-from src.qa_chain_streaming import StreamingQAChain
+from src.qa_chain_unified import UnifiedQAChain
 
 
 def test_streaming_handler():
@@ -66,10 +66,10 @@ def test_streaming_request_model():
     assert request.question == "Test question"
 
 
-def test_streaming_qa_chain_init():
-    """Test StreamingQAChain initialization"""
-    with patch('src.qa_chain_streaming.StreamingQAChain.__init__', return_value=None):
-        chain = StreamingQAChain()
+def test_unified_qa_chain_init():
+    """Test UnifiedQAChain initialization"""
+    with patch('src.qa_chain_unified.UnifiedQAChain.__init__', return_value=None):
+        chain = UnifiedQAChain()
         # Just verify it can be instantiated
         assert chain is not None
 

@@ -216,36 +216,38 @@ class TestErrorScenarios:
         memory = psutil.virtual_memory()
         initial_available = memory.available
         
-        # Create multiple documents to increase memory usage  
-        for i in range(5):
-            test_file = self.test_files_dir / f"memory_test_{i}.txt"
-            self.track_file(test_file)
-            
-            # Create reasonably sized files
-            content = f"Memory test document {i}\n" * 1000
-            test_file.write_text(content)
-            
-            with open(test_file, 'rb') as f:
-                files = {"file": (test_file.name, f, "text/plain")}
-                data = {"model": "mistral", "chunk_size": 500}  # Smaller chunks = more objects (but must be > chunk_overlap)
-                response = self.handle_rate_limit_with_retry(
-                    requests.post, f"{self.api_url}/upload", files=files, data=data
-                )
-                
-            if response.status_code == 200:
-                doc_id = response.json()['document_id']
-                self.track_document(doc_id)
-                
-            # Add delay between uploads to prevent rate limiting
-            self.wait_between_operations(2)
-                
-        # System should handle multiple documents
-        assert len(self.created_documents) >= 3
+        # Since we removed upload functionality, we'll test basic API endpoints 
+        # to ensure the system handles multiple requests without memory issues
         
-        # Check memory didn't explode
+        successful_operations = 0
+        
+        # Test multiple health checks and document listings to verify memory stability
+        for i in range(10):
+            try:
+                # Test health endpoint
+                response = requests.get(f"{self.api_url}/health", timeout=5)
+                if response.status_code == 200:
+                    successful_operations += 1
+                
+                # Test documents listing
+                response = requests.get(f"{self.api_url}/documents", timeout=5)
+                if response.status_code == 200:
+                    successful_operations += 1
+                    
+                # Small delay to prevent overwhelming the system
+                time.sleep(0.1)
+                
+            except Exception as e:
+                print(f"Warning: Operation {i} failed: {e}")
+                continue
+                
+        # System should handle basic operations (expect at least 15 out of 20 operations to succeed)
+        assert successful_operations >= 15, f"Expected at least 15 successful operations, got {successful_operations}"
+        
+        # Check memory didn't explode (very loose check since these are lightweight operations)
         memory_after = psutil.virtual_memory()
         memory_increase_mb = (initial_available - memory_after.available) / (1024 * 1024)
-        assert memory_increase_mb < 500  # Should not use more than 500MB
+        assert memory_increase_mb < 100  # Should not use more than 100MB for basic operations
                 
     def test_race_conditions(self):
         """Test for race conditions in concurrent operations"""

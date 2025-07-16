@@ -8,7 +8,7 @@ load_dotenv()
 class Config:
     # LLM Settings
     USE_LOCAL_LLM = True  # Always true for free version
-    LOCAL_LLM_MODEL = os.getenv("LOCAL_LLM_MODEL", "mistral")
+    LOCAL_LLM_MODEL = os.getenv("LOCAL_LLM_MODEL", "mistral:latest")
 
     # Embedding model - using local sentence transformers
     EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
@@ -29,6 +29,7 @@ class Config:
     # M3 specific optimizations
     NUM_THREADS = int(os.getenv("NUM_THREADS", 8))  # M3 has 8 cores
     BATCH_SIZE = int(os.getenv("BATCH_SIZE", 4))
+    EMBEDDING_BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", 2))  # Smaller batch for embeddings to prevent GPU OOM
 
     # Memory management
     MAX_MEMORY_GB = int(os.getenv("MAX_MEMORY_GB", 8))

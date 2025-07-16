@@ -101,6 +101,7 @@ class OptimizedVectorStore:
     ) -> List[List[Document]]:
         """Perform batch similarity search for multiple queries"""
         # Get embeddings for all queries at once
+        # The embedding_function is set when loading the vector store
         embeddings = vector_store.embedding_function.embed_documents(queries)
         
         # Convert to numpy array
