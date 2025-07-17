@@ -41,8 +41,8 @@ class ModelTester:
     def test_model_basic(self, model_name: str) -> Tuple[bool, str]:
         """Test basic model functionality"""
         try:
-            # Test with minimal parameters first
-            llm = Ollama(model=model_name)
+            # Test with minimal parameters first, but with proper timeout
+            llm = Ollama(model=model_name, timeout=120)  # 2 minute timeout for first call
             response = llm.invoke("Hello, can you respond?")
             return True, "Basic test passed"
         except Exception as e:
@@ -74,7 +74,9 @@ class ModelTester:
         
         for param_set in param_sets:
             try:
-                llm = Ollama(model=model_name, **param_set["params"])
+                # Add timeout to parameters
+                params_with_timeout = {**param_set["params"], "timeout": 60}
+                llm = Ollama(model=model_name, **params_with_timeout)
                 response = llm.invoke("What is 2+2?")
                 results["tests"].append({
                     "test": param_set["name"],
@@ -124,7 +126,9 @@ class ModelTester:
         
         for test_content in test_contents:
             try:
-                llm = Ollama(model=model_name, **working_params)
+                # Add timeout to working parameters
+                params_with_timeout = {**working_params, "timeout": 60}
+                llm = Ollama(model=model_name, **params_with_timeout)
                 start_time = time.time()
                 response = llm.invoke(test_content["content"])
                 end_time = time.time()
@@ -201,6 +205,18 @@ class ModelTester:
         for model in models:
             print(f"\n🧪 Testing model: {model}")
             
+            # Warm up the model first
+            print(f"  🔥 Warming up model...")
+            try:
+                warmup_llm = Ollama(model=model, timeout=120)
+                warmup_start = time.time()
+                warmup_llm.invoke("Hi")
+                warmup_time = time.time() - warmup_start
+                print(f"  ✅ Warmup completed in {warmup_time:.2f}s")
+            except Exception as e:
+                print(f"  ❌ Warmup failed: {str(e)}")
+                continue
+
             # Basic test
             success, message = self.test_model_basic(model)
             print(f"  ✓ Basic test: {'✅ Passed' if success else '❌ Failed'} - {message}")
@@ -235,15 +251,19 @@ class ModelTester:
         print("📋 Generating model configuration...")
         model_config = self.generate_model_config()
         
-        # Save results
-        with open("model_test_results.json", "w") as f:
+        # Save results to test output directory
+        output_dir = "tests/results"
+        os.makedirs(output_dir, exist_ok=True)
+        results_path = os.path.join(output_dir, "model_test_results.json")
+        
+        with open(results_path, "w") as f:
             json.dump({
                 "test_date": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "test_results": self.test_results,
                 "model_configurations": model_config
             }, f, indent=2)
         
-        print("✅ Test results saved to model_test_results.json")
+        print(f"✅ Test results saved to {results_path}")
         
         # Save recommended configuration
         self.save_model_config(model_config)
@@ -261,10 +281,16 @@ class ModelTester:
             else:
                 config_content["unsupported_models"].append(model)
         
-        with open("src/model_config.json", "w") as f:
+        # Save to test results directory instead of modifying source files
+        output_dir = "tests/results"
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, "tested_model_config.json")
+
+        with open(output_path, "w") as f:
             json.dump(config_content, f, indent=2)
         
-        print("✅ Model configuration saved to src/model_config.json")
+        print(f"✅ Model configuration saved to {output_path}")
+        print("⚠️  Note: This test output does not modify src/model_config.json")
         
         # Print summary
         print("\n📊 Summary:")
@@ -273,7 +299,6 @@ class ModelTester:
         
         if config_content["unsupported_models"]:
             print(f"  - Unsupported: {', '.join(config_content['unsupported_models'])}")
-
 
 def main():
     """Main function to run model tests"""
@@ -297,7 +322,6 @@ def main():
     
     tester = ModelTester()
     tester.run_tests(models=args.models)
-
 
 if __name__ == "__main__":
     main()

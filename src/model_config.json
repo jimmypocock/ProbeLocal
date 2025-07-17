@@ -1,6 +1,6 @@
 {
   "model_parameters": {
-    "deepseek-llm:7b-chat": {
+    "default": {
       "num_ctx": 2048,
       "num_thread": 8,
       "repeat_penalty": 1.1,
@@ -9,7 +9,10 @@
         "Question:"
       ]
     },
-    "deepseek-coder:6.7b-instruct": {
+    "deepseek": {
+      "num_ctx": 2048
+    },
+    "mistral": {
       "num_ctx": 2048,
       "num_thread": 8,
       "repeat_penalty": 1.1,
@@ -19,7 +22,7 @@
       ]
     },
     "llama3": {
-      "num_ctx": 4096,
+      "num_ctx": 2048,
       "num_thread": 8,
       "repeat_penalty": 1.1,
       "stop": [
@@ -27,8 +30,8 @@
         "Question:"
       ]
     },
-    "llama3:8b": {
-      "num_ctx": 4096,
+    "phi": {
+      "num_ctx": 2048,
       "num_thread": 8,
       "repeat_penalty": 1.1,
       "stop": [
@@ -36,7 +39,7 @@
         "Question:"
       ]
     },
-    "mistral:latest": {
+    "neural-chat": {
       "num_ctx": 2048,
       "num_thread": 8,
       "repeat_penalty": 1.1,
