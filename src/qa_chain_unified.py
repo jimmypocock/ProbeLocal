@@ -385,12 +385,26 @@ Answer based on the web search results above:"""
         start_time: float
     ) -> Dict[str, Any]:
         """Handle computation/math requests (calculate, sum, count, etc.)"""
-        # Route to document handler with specialized prompt and lower temperature for accuracy
-        return self._handle_document_question(
-            question, document_id, False, 10,  # Focused results for computation
-            model_name, temperature if temperature is not None else 0.2,  # Very low temp for accuracy
-            start_time, QueryIntent.COMPUTATION, 0.8
-        )
+        # Computation doesn't require documents - work directly with the LLM
+        comp_temperature = temperature if temperature is not None else 0.2  # Very low temp for accuracy
+        llm = self._get_llm(model_name, comp_temperature)
+        
+        computation_prompt = f"""You are a helpful AI assistant specialized in mathematical computation and calculations.
+Please solve the following calculation or mathematical problem step by step.
+
+Question: {question}
+
+Provide a clear, step-by-step solution and the final answer:"""
+        
+        response = llm.invoke(computation_prompt)
+        
+        return {
+            'answer': response,
+            'sources': [],
+            'processing_time': time.time() - start_time,
+            'document_id': 'none',
+            'used_web_search': False
+        }
     
     def _handle_document_question(
         self,
@@ -409,7 +423,7 @@ Answer based on the web search results above:"""
         prompt_template = self._create_flexible_prompt(intent, confidence)
         
         # Get retriever
-        if not document_id or document_id == "web_only":
+        if not document_id or document_id in ["web_only", "none"]:
             retriever = self._get_web_only_retriever(question, max_results)
         elif document_id in ["unified", "all"]:
             try:

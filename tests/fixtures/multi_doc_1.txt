@@ -1,1 +1,1 @@
-Document 1: This is test document number 1.
+Document One contains information about apples. Apples are red fruits.

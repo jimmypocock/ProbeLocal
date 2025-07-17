@@ -1,0 +1,10 @@
+
+        Sales Data Report
+        
+        Q1 Sales: 100 units
+        Q2 Sales: 150 units
+        Q3 Sales: 200 units
+        Q4 Sales: 175 units
+        
+        Total yearly sales: 625 units
+        

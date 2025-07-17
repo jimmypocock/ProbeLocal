@@ -1,1 +1,1 @@
-Document 2: This is test document number 2.
+Document Two contains information about oranges. Oranges are citrus fruits.
